@@ -2,9 +2,7 @@
 
 function x = forward_backward_optimisation(A, y, lambda, method_i, rho)
 
-addpath('../');
-addpath('/home/claire/Codes/Code2/toolbox_optim/');
-addpath('/home/claire/Codes/Code2/toolbox_optim/toolbox/');
+addpath('optim_function/');
 
 % Matrix and observation.
 if nargin < 2
