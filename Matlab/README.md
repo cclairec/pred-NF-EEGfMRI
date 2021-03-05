@@ -7,5 +7,6 @@ Requiered Matlab toolboxes :
 - Signal Processing Toolbox
 - Statistics and Machine Learning Toolbox
 
-Requiered other toolboxes : 
-- 
+Requiered toolboxes :
+- Toolbox_optim from Gabriel Peyre
+
