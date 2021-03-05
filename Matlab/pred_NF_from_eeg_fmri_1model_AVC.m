@@ -8,7 +8,7 @@
 % clean_test: boolean, to clean or not the design matrix of data test.
 
 function Res = pred_NF_from_eeg_fmri_1model_AVC(suj_ID, session, learn_run, test_run,mod, nb_bandfreq, reg_function,clean_test)
-DataPath='/home/claire/DatatAndResults/Data_NFAVC/Patients'; % Where subjects are stored
+DataPath='C:/Users/cpinte/Documents/Data/Patients'; % Where subjects are stored
 if nargin ==0
 error('Some parameters are needed : suj_ID \n session: S1s1, S1s2,.. must contain subfolders nf1, nf2, nf3, mi_pre \n learn_run and test_run: nf1 nf2 or nf3 \n mod: eeg, fmri or both. Here both means 2 models. \n nb_bandfreq: number of freq bands (default 10) \n size_bandfreq: width of freq bands for the design matrice \n reg: regularisation function: lasso (matlab), fistaL1 (default) or L12 \n clean_test: boolean, to clean or not the design matrix of data test. (not used) \n')
 end

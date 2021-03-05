@@ -8,8 +8,8 @@ for p=1:length(patients)
         for l=1:length(learn_runs)
             for t=1:length(test_runs)
                 Res=pred_NF_from_eeg_fmri_1model_AVC(patients{p}, sessions{s}, learn_runs{l}, test_runs{t},'fmri');
-                ['/local/ccury/NF_AVC/Results/Res_', patients{p} ,'_s_' ,sessions{s}, '_l', learn_runs{l}, '_t', test_runs{t}, '.mat']
-                save(Res,['/local/ccury/NF_AVC/Results/Res_', patients{p} ,'_s_' ,sessions{s}, '_l', learn_runs{l}, '_t', test_runs{t}, '.mat']);
+                ['C:/Users/cpinte/Documents/Results/Res_', patients{p} ,'_s_' ,sessions{s}, '_l', learn_runs{l}, '_t', test_runs{t}, '.mat']
+                save(Res,['C:/Users/cpinte/Documents/Results/Res_', patients{p} ,'_s_' ,sessions{s}, '_l', learn_runs{l}, '_t', test_runs{t}, '.mat']);
             end
         end
     end
