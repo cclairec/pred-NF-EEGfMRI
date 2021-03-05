@@ -6,3 +6,6 @@ adapted for the study of Stroke patients from the Hemisfer study.
 Requiered Matlab toolboxes :
 - Signal Processing Toolbox
 - Statistics and Machine Learning Toolbox
+
+Requiered other toolboxes : 
+- 
