@@ -1,6 +1,6 @@
 
-function [regul_lambda rho] = lambda_choice(Dtrain, rep_train, nb_freq_band, reg_function, lambdas, rho, disp_)
-disp_=1;
+function [regul_lambda rho] = lambda_choice(Dtrain, rep_train, nb_freq_band, reg_function, lambdas, disp_)
+
 
 if nargin < 4
     reg_function = 'lasso';
@@ -8,17 +8,13 @@ end
 if nargin < 5
     lambdas = [0:0.1:10];
 end
-if nargin <7
+if nargin <6
     disp_=0;
 end
-if nargin <6
-    rho=lambdas(1);
-end
 
-%rho = mean(lambdas);
 
 clear sparsity R2_train
-K = 50;
+K = 10;
 
 if size(rep_train,1) == 2 || size(rep_train,2)==2
     weights = [1/3 1/2 2/3];
@@ -47,7 +43,7 @@ for w = 1:length(weights)
     clear CV_mean_ sparsity_ CV Cost_train Cost_train_mean sparsity_mean
     for l=lambdas
         l
-       % rho=l;
+	rho=l;
         k_ind = 1;
         for k = 1:delay_cv:size(Dtrain)-size_cv_dataset
             cv_set = [floor(k):floor(k)+size_cv_dataset];
@@ -124,16 +120,19 @@ for w = 1:length(weights)
     biais_var = (CV_mean_ + Cost_train_mean)/2;
     
     [sort_biais_var ind_sorted]=sort(biais_var);
-    j=1;
-    if sort_biais_var(j) ~= biais_var(end)
-        % enforcing sparsity
-        while  j<=length(sort_biais_var) && sparsity_mean(ind_sorted(j))>= sparsity_mean(ind_sorted(j+1)) && abs(sort_biais_var(j+1)-sort_biais_var(j))<=0.001 %sparsity_threshold
-            j=j+1;
-        end
+    j=2;
+    % enforcing sparsity
+    while  j<=length(sort_biais_var) && sparsity_mean(ind_sorted(j))> sparsity_threshold
+        j=j+1;
+    end
+    % even more, if models are similar:
+    j_ref=j;
+    while j<=length(sort_biais_var) && abs(sort_biais_var(j_ref)-sort_biais_var(j))<=0.001 
+        j=j+1;
     end
     %[m, mi_biais_var]=min(biais_var)
-    regul_lambda_w(w) = lambdas(ind_sorted(j));
-    biais_var_w(w) = sort_biais_var(j);
+    regul_lambda_w(w) = lambdas(ind_sorted(j-1));
+    biais_var_w(w) = sort_biais_var(j-1);
     if disp_
         figure(),
         plot(lambdas(1:ind-1),CV_mean_), hold on,
@@ -144,7 +143,12 @@ end
 biais_var_w
 regul_lambda_w
 [sort_biais_var_w, ind_sorted]=sort(biais_var_w)
-
-regul_lambda = regul_lambda_w(ind_sorted(1));
-    weight = weights(ind_sorted(1));
+j=2;
+if j<=length(weights)
+    while abs(sort_biais_var_w(1)-sort_biais_var_w(j))<=0.001 && j<=length(weights)
+        j=j+1;
+    end
+end
+regul_lambda = regul_lambda_w(ind_sorted(j-1));
+    weight = weights(ind_sorted(j-1));
 end
