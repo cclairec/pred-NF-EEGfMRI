@@ -407,10 +407,10 @@ end
 %     end
     
     plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['estimated abs filter all band of freq for fMRI']);
-      figure();  plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['estimated filter all band of freq for fMRI']);
+       plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['estimated filter all band of freq for fMRI']);
 
 
-plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1, title(['Electrodes kept in the model']));  
+plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['Electrodes kept in the model']);  
         
     length(nonzeros(filter_estimated_eeg))
     length(nonzeros(cell2mat(filter_estimated_fmri)))
