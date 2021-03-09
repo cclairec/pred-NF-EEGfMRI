@@ -1,4 +1,4 @@
-function [varFig,f1] = plotElecPotentials(EMap,potentials)
+function [varFig,f1] = plotElecPotentials(EMap,potentials, disp_text, f1)
 %
 % <The RCSP (Regularized Common Spatial Pattern) Toolbox.>
 %     Copyright (C) 2010  Fabien LOTTE
@@ -23,10 +23,16 @@ function [varFig,f1] = plotElecPotentials(EMap,potentials)
 %EMAP: Map that specifies electrode location
 %potentials: column vector containing the electrode potentials (instantaneous)
 
+if nargin <= 2
+    disp_text = 0;
+end
     X=cell2mat(EMap(2,:));
     Y=cell2mat(EMap(3,:));
     Z1=potentials';
     
+%     tmp = Y;
+%     Y = X;
+%     X = -tmp;
     maxX = max(X);
     minX = min(X);
     maxY = max(Y);
@@ -79,14 +85,16 @@ function [varFig,f1] = plotElecPotentials(EMap,potentials)
     ry = cos(circ); 
     headx = [[rx(:)' rx(1) ]*(hin+hwidth)  [rx(:)' rx(1)]*hin];
     heady = [[ry(:)' ry(1) ]*(hin+hwidth)  [ry(:)' ry(1)]*hin];
-
-    f1=figure;
+    
+    if nargin < 4
+        f1=figure;
+    end
     pos=get(f1,'Position');
     set(f1,'Position',pos);
 
     % Left Tap
     h1=subplot('Position',[0,0,0.925,0.925]);
-    [iX,iY,iiZ1]=griddata(X,Y,Z1,iiY',iiX,'v4'); % interpolate data
+    [iX,iY,iiZ1]=griddata(X,Y,Z1,iiY',iiX,'natural'); % interpolate data linear nearest natural
        
     %mask points outside the convex-hull (as the interpolation would be
     %poor for these points)
@@ -98,18 +106,21 @@ function [varFig,f1] = plotElecPotentials(EMap,potentials)
     [maxZRow maxZIndexRow] = max(maxZCol);
     [minZRow minZIndexRow] = min(minZCol);
             
-    contourf(h1,iX,iY,iiZ1,20,'LineColor','None');       % plot the interpolated potentials
-    
+    contourf(h1,iX,iY,iiZ1,10,'LineColor','None');       % plot the interpolated potentials
+
     title('Potentials');
     hold on;
     plotheadears();                                   % plot the head, nose, ears
     plot(X,Y,'o','MarkerEdgeColor','k',...
         'MarkerFaceColor','k','MarkerSize',2);        % plot the electrodes
     enames=cellstr(EMap(1,:));
-    text(X,Y,enames);
+    if disp_text
+        text(X,Y,enames);
+    end
     axis square;
     xlim([-1.2 1.2]);
     ylim([-1 1.2]);
+
     hold off;
     axis off;
     
