@@ -9,6 +9,10 @@
 
 function Res = pred_NF_from_eeg_fmri_1model_AVC(suj_ID, session, learn_run, test_run,mod, nb_bandfreq, reg_function,clean_test)
 DataPath='C:/Users/cpinte/Documents/Data/Patients'; % Where subjects are stored
+ResPath=['C:/Users/cpinte/Documents/Results/Res_', suj_ID ,'_s' ,session, '_l', learn_run, '_t', test_run, '/']; % Where figures are saved
+if not(isfolder(ResPath))
+    mkdir(ResPath)
+end
 if nargin ==0
 error('Some parameters are needed : suj_ID \n session: S1s1, S1s2,.. must contain subfolders nf1, nf2, nf3, mi_pre \n learn_run and test_run: nf1 nf2 or nf3 \n mod: eeg, fmri or both. Here both means 2 models. \n nb_bandfreq: number of freq bands (default 10) \n size_bandfreq: width of freq bands for the design matrice \n reg: regularisation function: lasso (matlab), fistaL1 (default) or L12 \n clean_test: boolean, to clean or not the design matrix of data test. (not used) \n')
 end
@@ -308,9 +312,11 @@ if strcmp(reg_function, 'lasso')
     lambdas=[0.1:0.2:10];
 elseif strcmp(reg_function, 'fistaL1')
     lambdas=[0:80:2000];
+    %lambdas=[0:80:160]; %for debug
 end
 
 [regul_eeg] = lambda_choice(D_learning,rep_learning,nb_bandfreq, reg_function,lambdas,disp_fig);
+saveas(gcf,['',ResPath,'Fig1.png'])
 % end
 
 disp(['  **  EEG lambda parameter for method ' reg_function ' is ' num2str(regul_eeg)]);
@@ -395,8 +401,10 @@ end
 %     end
     
     plotElecPotentials(Emaps,sum(abs(filter_estimated_eeg(1:63,:)),2)',1), title(['estimated abs filter all band of freq for EEG']);
-        plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['estimated filter all band of freq for EEG']);
-
+    saveas(gcf,['',ResPath,'Fig2.png'])
+    plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['estimated filter all band of freq for EEG']);
+    saveas(gcf,['',ResPath,'Fig3.png'])
+    
 %     kk=1;
 %     for i = 1:nb_bandfreq
 %         plotElecPotentials(Emaps,filter_estimated_fmri{1}(1:63,i)',1);
@@ -407,10 +415,12 @@ end
 %     end
     
     plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['estimated abs filter all band of freq for fMRI']);
-       plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['estimated filter all band of freq for fMRI']);
+    saveas(gcf,['',ResPath,'Fig4.png'])
+    plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['estimated filter all band of freq for fMRI']);
+    saveas(gcf,['',ResPath,'Fig5.png'])
 
-
-plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['Electrodes kept in the model']);  
+    plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['Electrodes kept in the model']);  
+    saveas(gcf,['',ResPath,'Fig6.png'])
         
     length(nonzeros(filter_estimated_eeg))
     length(nonzeros(cell2mat(filter_estimated_fmri)))
