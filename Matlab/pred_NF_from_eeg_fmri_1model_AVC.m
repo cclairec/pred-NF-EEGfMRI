@@ -431,7 +431,7 @@ Res.learning_session = learn_run;
 Res.test_session = test_run;
 Res.alpha = alpha;
 %Res.alpha_fMRI = alpha_fmri;
-Res.NF_estimated_ave = NF_estimated;
+Res.NF_estimated_fMRI = NF_estimated;
 Res.filter_estimated_e = filter_estimated_eeg;
 Res.filter_estimated_f = filter_estimated_fmri;
 
