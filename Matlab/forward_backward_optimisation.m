@@ -78,7 +78,7 @@ if length(size(A)) == 3
     %ProxF_21 = @(x,tau)prox_L21(x, lambda*tau);
     %x_init = perform_fb(x_init, ProxF_21, GradG, L, options);
 end
-
+disp(['  Constant L before perform fb : ' num2str(L)]);
 [x,e] = perform_fb(x_init, ProxF, GradG, 2*L, options); % in toolbox_optim
 
 
