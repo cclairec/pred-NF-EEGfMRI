@@ -44,6 +44,7 @@ for w = 1:length(weights)
     for l=lambdas
         l
 	rho=l;
+    %rho=0;
         k_ind = 1;
         for k = 1:delay_cv:size(Dtrain)-size_cv_dataset
             cv_set = [floor(k):floor(k)+size_cv_dataset];
