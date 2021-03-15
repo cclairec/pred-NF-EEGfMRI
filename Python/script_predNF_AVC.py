@@ -9,7 +9,7 @@ Created on Thu Mar 11 14:41:26 2021
 
 # Imports
 from pred_NF_from_eeg_fmri_1model_AVC import pred_NF_from_eeg_fmri_1model_AVC
-from scipy.io import savemat
+import scipy.io as sio
 
 # Data
 # patients = ['P002','P003','P004','P015','P017']
@@ -33,4 +33,4 @@ for p in patients :
                 # Call model estimation
                 Res = pred_NF_from_eeg_fmri_1model_AVC(data_path, p, s, l, t,'fmri')              
                 # Save results object
-                savemat(res_path, Res)
+                sio.savemat(res_path, {'Res':[Res]}) # import into Matlab with : data = load(res_path); Res = [data.Res{:}];
