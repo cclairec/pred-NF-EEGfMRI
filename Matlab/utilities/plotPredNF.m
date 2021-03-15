@@ -20,7 +20,7 @@ end
 hold on;
 plot1=plot(zscore(Res.NF_estimated_fMRI).*50, 'LineWidth', 1); plot1.Color(4)=0.7;
 plot2=plot(zscore(Res.NF_fMRI_test).*50, 'LineWidth', 1); plot2.Color(4)=0.7;
-plot3=plot(zscore((Res.NF_EEG_test)+(Res.NF_fMRI_test)).*50, 'LineWidth', 1); plot3.Color(4)=0.7;
+%plot3=plot(zscore((Res.NF_EEG_test)+(Res.NF_fMRI_test)).*50, 'LineWidth', 1); plot3.Color(4)=0.7;
 
 title('NF estimated fMRI (Red), test NF fMRI score (Yellow), test NF EEG+fMRI score(Purple)');
 
