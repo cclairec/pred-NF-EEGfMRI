@@ -1,7 +1,14 @@
 load('C:/Users/cpinte/Documents/Data/Patients/P002/P002_NFEEG/S1s1/NF1/EEG_features_Laplacian.mat'); 
 
+badseg_learning = EEG_FEAT.bad_segments;
+badseg_learning_ind = find(badseg_learning);
+
 EEG_signal_reshape_learning(:,:) = reshape(EEG_FEAT.data, 64, 64000);
-data = mean(EEG_signal_reshape_learning,1);
+data = EEG_signal_reshape_learning(5,:);
+
+for j=1:length(badseg_learning_ind)
+data(1,badseg_learning_ind) = 0;
+end
 
 blocsize=160;nbloc=8;
 minval = -300;
@@ -21,4 +28,4 @@ end
 hold on;
 plot5=plot((data)*50, 'LineWidth', 1); plot5.Color(4)=0.7;
 plot6=plot((EEG_FEAT.bad_segments).*500, 'LineWidth', 1); plot6.Color(4)=0.7;
-title('mean data (Red) and badsegments (Yellow)');
+title('C3 data (Red) and badsegments (Yellow)');
