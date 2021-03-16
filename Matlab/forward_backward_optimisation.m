@@ -2,7 +2,7 @@
 
 function x = forward_backward_optimisation(A, y, lambda, method_i, rho)
 
-addpath('optim_function/');
+addpath('Matlab/optim_function/');
 
 % Matrix and observation.
 if nargin < 2
