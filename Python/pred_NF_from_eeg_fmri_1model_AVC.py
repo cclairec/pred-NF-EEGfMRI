@@ -11,7 +11,10 @@ import numpy as np
 import logging
 from colorlog import ColoredFormatter
 import mat73
+#import scipy.io as sio
 import math
+from scipy import stats
+from scipy.signal import savgol_filter
 
 #====================================================================
 # Initialisation : Format of logs
@@ -114,11 +117,75 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
     badseg_testing = suj_testing_EEG_FEAT['bad_segments'][::50].copy()
     bad_scores_testing_ind = np.nonzero(badseg_testing)[0]
 
-    ### Load Channel names
+    ### Load Channel names -> not used
+    #logger.info("* Loading channel names")
+    #chanlocs = sio.loadmat("{}/Chanlocs.mat".format(dataPath))
     
     ### Extracting NF_EEG / NF_fMRI scores
+    logger.info("* Extracting NF_EEG scores")
+
+    X_eeg_learn_smooth_Lap = stats.zscore(suj_learning_EEG_FEAT['smoothnf'], axis=0, ddof=1)
+    X_eeg_test_smooth_Lap = stats.zscore(suj_testing_EEG_FEAT['smoothnf'], axis=0, ddof=1)
     
+    logger.info("* Extracting NF_fMRI scores")
+    
+    fmri_NF_learn = suj_learning_fMRI_FEAT[0]['nf']
+    fmri_NF_test = suj_testing_fMRI_FEAT[0]['nf']
+    
+    kk = -1
+    fmri_NF_reshape = np.zeros(1280)
+    fmri_NF_reshape_test = np.zeros(1280)
+    
+    for ii in range(0,len(X_eeg_learn_smooth_Lap),4) :
+        kk = kk+1
+        for k in range(ii, ii+4) :
+            fmri_NF_reshape[k] = fmri_NF_learn[kk]
+            fmri_NF_reshape_test[k] = fmri_NF_test[kk]
+    
+    X_fmri_reshape = stats.zscore(fmri_NF_reshape, axis=0, ddof=1);
+    X_fmri_reshape_test = stats.zscore(fmri_NF_reshape_test, axis=0, ddof=1);
+
+    ### Smooth NF scores
+    logger.info("* Smoothing NF scores")
+    
+    X_fmri_reshape_learn_smooth = savgol_filter(X_fmri_reshape, smooth_param, 3)
+    X_fmri_reshape_test = savgol_filter(X_fmri_reshape_test, smooth_param, 3)
+
+    ### Removing bad segments
+    logger.info("* Removing bad segments from NF scores")
+    
+    X_fmri_reshape_learn_smooth = X_fmri_reshape_learn_smooth * 50
+    X_fmri_reshape_learn_smooth = np.delete(X_fmri_reshape_learn_smooth, bad_scores_learning_ind)
+    
+    X_fmri_reshape_test = X_fmri_reshape_test * 50
+    X_fmri_reshape_test = np.delete(X_fmri_reshape_test, bad_scores_testing_ind)
+    
+    X_eeg_learn_smooth_Lap = X_eeg_learn_smooth_Lap * 50
+    X_eeg_learn_smooth_Lap = np.delete(X_eeg_learn_smooth_Lap, bad_scores_learning_ind)
+    
+    X_eeg_test_smooth_Lap = X_eeg_test_smooth_Lap * 50
+    X_eeg_test_smooth_Lap = np.delete(X_eeg_test_smooth_Lap, bad_scores_testing_ind)
+    
+    logger.info("* NF score to be learned, with mod : {}".format(mod))
+
+    if (mod == 'eeg') :
+        logger.info("Mod chosen : {}".format(mod))
+        #X = X_eeg_learn_smooth_Lap
+        #X_test = X_eeg_test_smooth_Lap
+        logger.info("Not implemented")
+    elif (mod == 'fmri') :
+        logger.info("Mod chosen : {}".format(mod))
+        X = X_fmri_reshape_learn_smooth
+        X_test = X_fmri_reshape_test
+    elif (mod == 'both') :
+        logger.info("Mod chosen : {}".format(mod))
+        #X = [X_eeg_learn_smooth_Lap + X_fmri_reshape_learn_smooth]
+        #X_test = [X_eeg_test_smooth_Lap+ X_fmri_reshape_test]
+        #weight = 0.5
+        logger.info("Not implemented")
+            
     ### Compute the design matrices for learning and test
+    logger.info("* Computing the design matrices for learning and testing")
     
     ### Removing some eletrodes
     
