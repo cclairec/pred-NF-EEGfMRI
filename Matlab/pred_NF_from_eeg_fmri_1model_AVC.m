@@ -54,7 +54,6 @@ f_m= 7; % minimum freq to consider
 f_M=30; % maximum freq to consider
 f_win=ceil((f_M-f_m)/nb_bandfreq); % windows frequency size
 
-
 disp(['  *  Reshaping EEG signals of learning and testing sessions']);
 clear EEG_signal_reshape_learning EEG_signal_reshape_test
 
@@ -171,14 +170,14 @@ motor_channels = [5,6,18,21,22,23,24,25,26,27,28,35,36,43,44,49,50,64]; % electr
 frontal_channels = [33 34 17]; % electrods to keep, base 64 already. Removed for patients.
 all_channels = [1:64];
 ind_elect_eeg_exclud = 1:64; % electrodes to exclude
-%ind_elect_eeg_exclud([motor_channels ])=[];
-ind_elect_eeg_exclud([all_channels ])=[];
+ind_elect_eeg_exclud([motor_channels ])=[];
+%ind_elect_eeg_exclud([all_channels ])=[];
 
 % alternative using variance of electrodes
-var_elect = var(EEG_signal_reshape_learning');
-var_ref = var_elect(5)+0.1*var_elect(5);
-ind_elect_eeg_exclud = 1:64; % electrodes to exclude
-ind_elect_eeg_exclud(var_elect<=var_ref)=[]; % cancel electrodes to kepp
+% var_elect = var(EEG_signal_reshape_learning');
+% var_ref = var_elect(5)+0.1*var_elect(5);
+% ind_elect_eeg_exclud = 1:64; % electrodes to exclude
+% ind_elect_eeg_exclud(var_elect<=var_ref)=[]; % cancel electrodes to kepp
 
 clear D_*;
 index_freq_band_used = [1:length(freq_band_learning)];
@@ -314,7 +313,7 @@ if strcmp(reg_function, 'lasso')
     lambdas=[0.1:0.2:10];
 elseif strcmp(reg_function, 'fistaL1')
     %lambdas=[0:80:2000]; %initial values
-    lambdas=[0:1000:50000]; % test
+    lambdas=[0:5000:100000]; % test
 end
 
 % Creating object input for testing
