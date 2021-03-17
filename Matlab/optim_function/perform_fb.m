@@ -43,7 +43,7 @@ t = 1;  % fista & nesterov
 tt = 2/L; gg = 0; A = 0; % nesterov
 y = x;
 x0 = x;
-for i=1:10000
+for i=1:niter
   	R(i) = report(x);
     if verb
         progressbar(i,niter);
