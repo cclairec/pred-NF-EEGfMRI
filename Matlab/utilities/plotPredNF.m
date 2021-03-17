@@ -33,9 +33,9 @@ for i=1:nbloc % plot Task bands
     hold on;
 end
 hold on;
-plot1=plot(zscore(NF_estimated_fMRI).*50, 'LineWidth', 1); plot1.Color(4)=0.7;
-plot2=plot(zscore(NF_fMRI_test).*50, 'LineWidth', 1); plot2.Color(4)=0.7;
-title('fMRI pred (Red) vs fMRI gtruth (Yellow)');
+plot1=plot(zscore(NF_estimated_fMRI).*50, 'c','LineWidth', 1); plot1.Color(4)=0.7;
+plot2=plot(zscore(NF_fMRI_test).*50, 'b','LineWidth', 1); plot2.Color(4)=0.7;
+title('fMRI pred (Cyan) vs fMRI gtruth (Blue)');
 correlation_value = corr2(zscore(NF_estimated_fMRI),zscore(NF_fMRI_test));
 legend(sprintf('Correlation = %0.3f',correlation_value))
 
@@ -53,8 +53,8 @@ for i=1:nbloc % plot Task bands
     hold on;
 end
 hold on;
-plot3=plot((zscore(NF_estimated_fMRI)+zscore(NF_EEG_test)).*50, 'LineWidth', 1); plot3.Color(4)=0.7;
-plot4=plot((zscore(NF_fMRI_test)+zscore(NF_EEG_test)).*50, 'LineWidth', 1); plot4.Color(4)=0.7;
+plot3=plot((zscore(NF_estimated_fMRI)+zscore(NF_EEG_test)).*50, 'r','LineWidth', 1); plot3.Color(4)=0.7;
+plot4=plot((zscore(NF_fMRI_test)+zscore(NF_EEG_test)).*50, 'y','LineWidth', 1); plot4.Color(4)=0.7;
 title('fMRI pred + EEG gtruth (Red) vs fMRI gtruth + EEG gtruth (Yellow)');
 correlation_value = corr2(zscore(NF_estimated_fMRI)+zscore(NF_EEG_test),zscore(NF_fMRI_test)+zscore(NF_EEG_test));
 legend(sprintf('Correlation = %0.3f',correlation_value))
@@ -73,9 +73,9 @@ for i=1:nbloc % plot Task bands
     hold on;
 end
 hold on;
-plot5=plot((zscore(NF_EEG_test)).*50, 'LineWidth', 1); plot5.Color(4)=0.7;
-plot6=plot((zscore(NF_fMRI_test)+zscore(NF_EEG_test)).*50, 'LineWidth', 1); plot6.Color(4)=0.7;
-title('EEG gtruth (Red) vs fMRI gtruth + EEG gtruth (Yellow)');
+plot5=plot((zscore(NF_EEG_test)).*50, 'g','LineWidth', 1); plot5.Color(4)=0.7;
+plot6=plot((zscore(NF_fMRI_test)+zscore(NF_EEG_test)).*50, 'y','LineWidth', 1); plot6.Color(4)=0.7;
+title('EEG gtruth (Green) vs fMRI gtruth + EEG gtruth (Yellow)');
 correlation_value = corr2(zscore(NF_EEG_test),zscore(NF_fMRI_test)+zscore(NF_EEG_test));
 legend(sprintf('Correlation = %0.3f',correlation_value))
 end
