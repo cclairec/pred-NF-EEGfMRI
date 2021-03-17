@@ -170,8 +170,8 @@ motor_channels = [5,6,18,21,22,23,24,25,26,27,28,35,36,43,44,49,50,64]; % electr
 frontal_channels = [33 34 17]; % electrods to keep, base 64 already. Removed for patients.
 all_channels = [1:64];
 ind_elect_eeg_exclud = 1:64; % electrodes to exclude
-ind_elect_eeg_exclud([motor_channels ])=[];
-%ind_elect_eeg_exclud([all_channels ])=[];
+%ind_elect_eeg_exclud([motor_channels ])=[];
+ind_elect_eeg_exclud([all_channels ])=[];
 
 % alternative using variance of electrodes
 % var_elect = var(EEG_signal_reshape_learning');
@@ -313,17 +313,17 @@ if strcmp(reg_function, 'lasso')
     lambdas=[0.1:0.2:10];
 elseif strcmp(reg_function, 'fistaL1')
     %lambdas=[0:80:2000]; %initial values
-    lambdas=[0:5000:100000]; % test
+    lambdas=[0:500:50000]; % test
 end
 
 % Creating object input for testing
-lambda_choice_input.D_learning = D_learning;
-lambda_choice_input.rep_learning = rep_learning;
-lambda_choice_input.nb_bandfreq = nb_bandfreq;
-lambda_choice_input.reg_function = reg_function;
-lambda_choice_input.lambdas = lambdas;
-lambda_choice_input.disp_fig = disp_fig;
-save(ResPath,'lambda_choice_input');
+% lambda_choice_input.D_learning = D_learning;
+% lambda_choice_input.rep_learning = rep_learning;
+% lambda_choice_input.nb_bandfreq = nb_bandfreq;
+% lambda_choice_input.reg_function = reg_function;
+% lambda_choice_input.lambdas = lambdas;
+% lambda_choice_input.disp_fig = disp_fig;
+% save(ResPath,'lambda_choice_input');
 
 [regul_eeg] = lambda_choice(D_learning,rep_learning,nb_bandfreq, reg_function,lambdas,disp_fig);
 saveas(gcf,['',ResPath,'Fig1.png'])

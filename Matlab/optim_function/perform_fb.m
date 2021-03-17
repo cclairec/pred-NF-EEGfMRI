@@ -36,7 +36,7 @@ report = getoptions(options, 'report', @(x)0);
 niter = getoptions(options, 'niter', 100);
 verb = getoptions(options, 'verb', 0);
 fbdamping = getoptions(options, 'fbdamping', 1.8);
-eps = getoptions(options, 'eps', 0.01);
+eps = getoptions(options, 'eps', 0.005);
 
 clear R Diff xnew tnew;
 t = 1;  % fista & nesterov
