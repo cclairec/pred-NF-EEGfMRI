@@ -36,13 +36,14 @@ report = getoptions(options, 'report', @(x)0);
 niter = getoptions(options, 'niter', 100);
 verb = getoptions(options, 'verb', 0);
 fbdamping = getoptions(options, 'fbdamping', 1.8);
+eps = getoptions(options, 'eps', 0.01);
 
-clear R;
+clear R Diff xnew tnew;
 t = 1;  % fista & nesterov
 tt = 2/L; gg = 0; A = 0; % nesterov
 y = x;
 x0 = x;
-for i=1:niter 
+for i=1:10000
   	R(i) = report(x);
     if verb
         progressbar(i,niter);
@@ -54,7 +55,11 @@ for i=1:niter
             xnew = ProxF( y - 1/L*GradG(y), 1/L );
             tnew = (1+sqrt(1+4*t^2))/2;
             y = xnew + (t-1)/(tnew)*(xnew-x);
+            Diff(i)=norm(x-xnew);
             x = xnew; t = tnew;
+            if Diff(i)<eps
+                break;
+            end
         case 'nesterov'
             a = (tt + sqrt(tt^2 + 4*tt*A))/2;
             v = ProxF( x0-gg, A );
@@ -65,5 +70,5 @@ for i=1:niter
         otherwise
             error('Unknown method');
             
-    end      
+    end 
 end
