@@ -166,18 +166,36 @@ end
 % Removing some electrods (the noisy ones, like occipital) from the design matrix of both steps:
 disp(['  *  Removing some electrods (the noisy ones, like occipital) from the design matrix of both steps:']);
 
-motor_channels = [5,6,18,21,22,23,24,25,26,27,28,35,36,43,44,49,50,64]; % electrods to keep, base 64 already
+motor_channels = [5,6,18,21,22,23,24,25,26,27,28,35,36,41,42,43,44,49,50,64]; % electrods to keep, base 64 already
 frontal_channels = [33 34 17]; % electrods to keep, base 64 already. Removed for patients.
 all_channels = [1:64];
 ind_elect_eeg_exclud = 1:64; % electrodes to exclude
 %ind_elect_eeg_exclud([motor_channels ])=[];
 ind_elect_eeg_exclud([all_channels ])=[];
 
+% clear Emaps; k=0;
+% for i=[1:31 33:64]
+%     k=k+1;
+%     Emaps{1,k}= Chanlocs(i).labels;
+%     Emaps{3,k}= Chanlocs(i).X;
+%     Emaps{2,k}= -Chanlocs(i).Y;
+% end
+
+% elect_kept=ones(1,64);
+% elect_kept(ind_elect_eeg_exclud)=0;
+% disp(elect_kept)
+% plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['motor_channel']); 
+
 % alternative using variance of electrodes
 % var_elect = var(EEG_signal_reshape_learning');
 % var_ref = var_elect(5)+0.1*var_elect(5);
 % ind_elect_eeg_exclud = 1:64; % electrodes to exclude
 % ind_elect_eeg_exclud(var_elect<=var_ref)=[]; % cancel electrodes to kepp
+
+% elect_chosen=ones(1,64);
+% elect_chosen(ind_elect_eeg_exclud)=0;
+% disp(elect_chosen)
+% plotElecPotentials(Emaps,elect_chosen([1:31 33:end])',1), title(['alternative']); 
 
 clear D_*;
 index_freq_band_used = [1:length(freq_band_learning)];
@@ -312,18 +330,18 @@ disp(['  **  Estimating regularisation parameter lambda for method ' reg_functio
 if strcmp(reg_function, 'lasso')
     lambdas=[0.1:0.2:10];
 elseif strcmp(reg_function, 'fistaL1')
-    %lambdas=[0:80:2000]; %initial values
-    lambdas=[0:500:50000]; % test
+    lambdas=[0:80:2000]; %initial values
+    %lambdas=[0:500:50000]; % test
 end
 
 % Creating object input for testing
-% lambda_choice_input.D_learning = D_learning;
-% lambda_choice_input.rep_learning = rep_learning;
-% lambda_choice_input.nb_bandfreq = nb_bandfreq;
-% lambda_choice_input.reg_function = reg_function;
-% lambda_choice_input.lambdas = lambdas;
-% lambda_choice_input.disp_fig = disp_fig;
-% save(ResPath,'lambda_choice_input');
+lambda_choice_input.D_learning = D_learning;
+lambda_choice_input.rep_learning = rep_learning;
+lambda_choice_input.nb_bandfreq = nb_bandfreq;
+lambda_choice_input.reg_function = reg_function;
+lambda_choice_input.lambdas = lambdas;
+lambda_choice_input.disp_fig = disp_fig;
+save(['',ResPath,'lambda_choice.mat'],'lambda_choice_input');
 
 [regul_eeg] = lambda_choice(D_learning,rep_learning,nb_bandfreq, reg_function,lambdas,disp_fig);
 saveas(gcf,['',ResPath,'Fig1.png'])
