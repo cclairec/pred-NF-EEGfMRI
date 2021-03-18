@@ -13,6 +13,7 @@ from colorlog import ColoredFormatter
 import mat73
 #import scipy.io as sio
 import math
+import scipy 
 from scipy import stats
 from scipy.signal import savgol_filter
 
@@ -48,6 +49,16 @@ logger.setLevel(LOG_LEVEL)
 if (logger.hasHandlers()):
     logger.handlers.clear()
 logger.addHandler(stream)
+
+#====================================================================
+# Initialisation : Format of logs
+#====================================================================
+
+def bandpower(x, fs, fmin, fmax):
+    f, Pxx = scipy.signal.periodogram(x, fs=fs)
+    ind_min = scipy.argmax(f > fmin) - 1
+    ind_max = scipy.argmax(f > fmax) - 1
+    return scipy.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])
 
 #====================================================================
 # Main function
@@ -185,8 +196,58 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
         logger.info("Not implemented")
             
     ### Compute the design matrices for learning and test
-    logger.info("* Computing the design matrices for learning and testing")
+    logger.info("* Computing the design matrices")
     
+    # Initialisation
+    freq_band_learning = []
+    freq_band_test = []
+    f_interval = []
+    for ff in range(0,nb_bandfreq) :
+        freq_band_learning.append(np.zeros((1281,np.shape(EEG_signal_reshape_learning)[0])))
+        freq_band_test.append(np.zeros((1281,np.shape(EEG_signal_reshape_learning)[0])))
+        f_interval.append([0,0])
+    f_interval.append([0,0]) # one more
+    
+# k=1; clear freq_band_*;
+# steps = 400; 
+# for i=1:50:64000, % shift for 1/4 of second
+#     k=k+1;
+#     f_interval{1} = [f_m f_m+f_win]; 
+#     for ff=1:nb_bandfreq
+# def bandpower(x, fs, fmin, fmax):
+# bandpower(x,fs,freqrange)
+#         freq_band_learning{ff}(k,:)=(bandpower(EEG_signal_reshape_learning(:,i:min(size(EEG_signal_reshape_learning,2),i+steps))',200,f_interval{ff}));
+#         freq_band_test{ff}(k,:)=(bandpower(EEG_signal_reshape_test(:,i:min(size(EEG_signal_reshape_test,2),i+steps))',200,f_interval{ff}));
+#         f_interval{ff+1} = [(max(f_interval{ff})-1) (max(f_interval{ff})-1) + f_win];
+#     end
+# end
+    k=0
+    steps = 400
+    
+    for i in range(0,64000,50) :
+        k = k+1
+        if (k%100 == 0) :
+            logger.info("Computing ... {}/1280".format(k))
+        elif (k==1280) :
+            logger.info("Done : {}/1280".format(k))
+        f_interval[0] = [f_m,f_m+f_win]
+        
+        for ff in range(0,nb_bandfreq) :
+            eeg_signal_learn = EEG_signal_reshape_learning[:,i:min((np.shape(EEG_signal_reshape_learning)[1]),i+steps+1)].T
+            
+            for col_index in range(0,np.shape(eeg_signal_learn)[1]) :
+                col = eeg_signal_learn[:,col_index]
+                freq_band_learning[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+            
+            eeg_signal_test = EEG_signal_reshape_test[:,i:min((np.shape(EEG_signal_reshape_test)[1]),i+steps+1)].T
+            
+            for col_index in range(0,np.shape(eeg_signal_test)[1]) :
+                col = eeg_signal_test[:,col_index]
+                freq_band_test[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+            
+            f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
+        
+
     ### Removing some eletrodes
     
     ### Estimate design matrix for fMRI model
