@@ -2,7 +2,7 @@
 
 function x = forward_backward_optimisation(A, y, lambda, method_i, rho)
 
-addpath('Matlab/optim_function/');
+addpath('optim_function/');
 
 % Matrix and observation.
 if nargin < 2
@@ -68,7 +68,7 @@ end
 options.report = @(x)F(x)+G(x);
 
 % Bench the algorithm
-options.niter = 100;
+options.niter = 6000;
 
 options.method = methods{method_i};
 clear x predicted_values;
