@@ -54,11 +54,33 @@ logger.addHandler(stream)
 # Initialisation : Format of logs
 #====================================================================
 
+def psdbandpower(Pxx, f, fmin, fmax):
+    colPxx = Pxx
+    colW = f
+    
+    idx = np.argwhere(colW<=fmin)
+    idx1 = idx[-1][0]
+    idx = np.argwhere(colW>=fmax)
+    idx2 = idx[0][0]
+    
+    W_diff = np.diff(colW)
+    lastRectWidth = 0
+    width = W_diff.copy()
+    width = np.append(width,lastRectWidth)
+ 
+    pwr = np.dot(width[idx1:idx2+1] , colPxx[idx1:idx2+1])
+    
+    return pwr
+    
+
 def bandpower(x, fs, fmin, fmax):
-    f, Pxx = scipy.signal.periodogram(x, fs=fs)
+    n = np.shape(x)[0]
+    f, Pxx = scipy.signal.periodogram(x, fs=fs, window=scipy.signal.windows.hamming(n), detrend=False)
     ind_min = scipy.argmax(f > fmin) - 1
     ind_max = scipy.argmax(f > fmax) - 1
-    return scipy.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])
+    res = psdbandpower(Pxx,f,fmin,fmax)
+    #res = scipy.integrate.simps(Pxx[ind_min: ind_max], f[ind_min: ind_max])
+    return res
 
 #====================================================================
 # Main function
