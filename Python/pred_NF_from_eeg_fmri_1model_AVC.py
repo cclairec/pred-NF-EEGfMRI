@@ -16,6 +16,7 @@ import math
 import scipy 
 from scipy import stats
 from scipy.signal import savgol_filter
+import pickle
 
 #====================================================================
 # Initialisation : Format of logs
@@ -51,7 +52,7 @@ if (logger.hasHandlers()):
 logger.addHandler(stream)
 
 #====================================================================
-# Initialisation : Format of logs
+# Utilities
 #====================================================================
 
 def psdbandpower(Pxx, f, fmin, fmax):
@@ -82,11 +83,23 @@ def bandpower(x, fs, fmin, fmax):
     #res = scipy.integrate.simps(Pxx[ind_min: ind_max], f[ind_min: ind_max])
     return res
 
+def spm_hrf(RT,p):
+    p = [float(x) for x in p]
+    fMRI_T = 16.0
+    RT = float(RT)
+    dt = RT/fMRI_T
+    u = np.arange(p[6]/dt + 1) - p[5]/dt
+    hrf = scipy.stats.gamma.pdf(u,p[0]/p[2],scale=1.0/(dt/p[2])) - scipy.stats.gamma.pdf(u,p[1]/p[3],scale=1.0/(dt/p[3]))/p[4]
+    index = np.arange(0,(p[6]/RT)+1,dtype=int) * int(fMRI_T)
+    hrf = hrf[index]
+    hrf = hrf/np.sum(hrf)
+    return hrf
+
 #====================================================================
 # Main function
 #====================================================================
 
-def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_run, mod='fmri', nb_bandfreq=10, reg_function='fistaL1', clean_test=1) :
+def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_run, mod='fmri', nb_bandfreq=10, reg_function='fistaL1', clean_test=1, electrodes='all') :
     '''
     Estimate model and predict NF scores.
 
@@ -100,7 +113,8 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
                     nb_bandfreq (int): number of freq bands (default 10).
                     reg_function (string): regularisation function, must be 'lasso' (matlab), 'fistaL1' or 'L12'.
                     clean_test (bool): clean or not the design matrix of data test.
-
+                    electrodes (string): use all channels or only motor channels, must be 'all' or 'motor'
+                    
             Returns:
                     Res (dictionary): contains result model and values in a format that will fit Matlab.
     '''
@@ -216,8 +230,28 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
         #X_test = [X_eeg_test_smooth_Lap+ X_fmri_reshape_test]
         #weight = 0.5
         logger.info("Not implemented")
+    else :
+        logger.error("mod (string): model to learn, must be 'eeg', 'fmri' or 'both'.")
+        return 0
             
-    ### Compute the design matrices for learning and test
+    ### Removing some eletrodes
+    logger.info("* Removing noisy electrodes")
+    
+    motor_channels = [4,5,17,20,21,22,23,24,25,26,27,34,35,40,41,42,43,48,49,63] 
+    frontal_channels = [32,33,16] # electrodes to keep, base 64 already. Removed for patients.
+    all_channels = np.arange(0,64)
+    ind_elect = np.arange(0,64) # electrodes to exclude
+    if (electrodes == 'all') :
+        logger.info("All electrodes chosen")
+        ind_elect_eeg_exclud = []
+    elif (electrodes == 'motor') :
+        logger.info("Motor electrodes chosen")
+        ind_elect_eeg_exclud = [element for element in ind_elect if element not in motor_channels] 
+    else :
+        logger.error("electrodes (string): use all channels or only motor channels, must be 'all' or 'motor'")
+        return 0
+    
+    ### Compute the design matrices for learning and testing
     logger.info("* Computing the design matrices")
     
     # Initialisation
@@ -230,49 +264,121 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
         f_interval.append([0,0])
     f_interval.append([0,0]) # one more
     
-# k=1; clear freq_band_*;
-# steps = 400; 
-# for i=1:50:64000, % shift for 1/4 of second
-#     k=k+1;
-#     f_interval{1} = [f_m f_m+f_win]; 
-#     for ff=1:nb_bandfreq
-# def bandpower(x, fs, fmin, fmax):
-# bandpower(x,fs,freqrange)
-#         freq_band_learning{ff}(k,:)=(bandpower(EEG_signal_reshape_learning(:,i:min(size(EEG_signal_reshape_learning,2),i+steps))',200,f_interval{ff}));
-#         freq_band_test{ff}(k,:)=(bandpower(EEG_signal_reshape_test(:,i:min(size(EEG_signal_reshape_test,2),i+steps))',200,f_interval{ff}));
-#         f_interval{ff+1} = [(max(f_interval{ff})-1) (max(f_interval{ff})-1) + f_win];
-#     end
-# end
-    k=0
-    steps = 400
+    # Compute freq_band for learning and testing
     
-    for i in range(0,64000,50) :
-        k = k+1
-        if (k%100 == 0) :
-            logger.info("Computing ... {}/1280".format(k))
-        elif (k==1280) :
-            logger.info("Done : {}/1280".format(k))
-        f_interval[0] = [f_m,f_m+f_win]
+    ################ debug ##################
+    
+    # k=0
+    # steps = 400
+    
+    # for i in range(0,64000,50) :
+    #     k = k+1
+    #     if (k%100 == 0) :
+    #         logger.info("Computing ... {}/1280 rows".format(k))
+    #     elif (k==1280) :
+    #         logger.info("Done : {}/1280 rows".format(k))
+    #     f_interval[0] = [f_m,f_m+f_win]
         
-        for ff in range(0,nb_bandfreq) :
-            eeg_signal_learn = EEG_signal_reshape_learning[:,i:min((np.shape(EEG_signal_reshape_learning)[1]),i+steps+1)].T
+    #     for ff in range(0,nb_bandfreq) :
+    #         eeg_signal_learn = EEG_signal_reshape_learning[:,i:min((np.shape(EEG_signal_reshape_learning)[1]),i+steps+1)].T
             
-            for col_index in range(0,np.shape(eeg_signal_learn)[1]) :
-                col = eeg_signal_learn[:,col_index]
-                freq_band_learning[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+    #         for col_index in range(0,np.shape(eeg_signal_learn)[1]) :
+    #             col = eeg_signal_learn[:,col_index]
+    #             freq_band_learning[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
             
-            eeg_signal_test = EEG_signal_reshape_test[:,i:min((np.shape(EEG_signal_reshape_test)[1]),i+steps+1)].T
+    #         eeg_signal_test = EEG_signal_reshape_test[:,i:min((np.shape(EEG_signal_reshape_test)[1]),i+steps+1)].T
             
-            for col_index in range(0,np.shape(eeg_signal_test)[1]) :
-                col = eeg_signal_test[:,col_index]
-                freq_band_test[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+    #         for col_index in range(0,np.shape(eeg_signal_test)[1]) :
+    #             col = eeg_signal_test[:,col_index]
+    #             freq_band_test[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
             
-            f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
+    #         f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
         
 
-    ### Removing some eletrodes
     
-    ### Estimate design matrix for fMRI model
+    # with open("freq_band_learning.txt", "wb") as fp:   #Pickling
+    #     pickle.dump(freq_band_learning, fp)
+        
+    # with open("freq_band_test.txt", "wb") as fp:   #Pickling
+    #     pickle.dump(freq_band_test, fp)
+    
+    with open("freq_band_learning.txt", "rb") as fp:   # Unpickling
+        freq_band_learning = pickle.load(fp)
+
+    with open("freq_band_test.txt", "rb") as fp:   # Unpickling
+        freq_band_test = pickle.load(fp)
+    
+    ###################################""
+    
+    # D_learning
+    index_freq_band_used = np.arange(0,len(freq_band_learning))
+    D_learning = np.hstack(freq_band_learning)
+    sz = np.shape(D_learning)[0]
+    D_learning = D_learning[1:(sz+1),:]
+    sz = np.shape(D_learning)[0]
+    D_learning = np.reshape(D_learning, (sz,64,nb_bandfreq), order="F")
+    D_learning[:,ind_elect_eeg_exclud,:] = 0
+    
+    # D_test
+    D_test = np.hstack(freq_band_test)
+    sz = np.shape(D_test)[0]
+    D_test = D_test[1:(sz+1),:]
+    sz = np.shape(D_test)[0]
+    D_test = np.reshape(D_test, (sz,64,nb_bandfreq), order="F")
+    D_test[:,ind_elect_eeg_exclud,:] = 0
+      
+    # Estimate design matrix for fMRI model
+    p = [4,16,1,1,3,0,32]
+    hrf4 = spm_hrf( 1/4, p ) # 4Hz
+    
+    p = [5,16,1,1,3,0,32]
+    hrf5 = spm_hrf( 1/4, p )
+    
+    p = [3,16,1,1,3,0,32]
+    hrf3 = spm_hrf( 1/4, p )
+    
+    x = np.shape(D_learning)[0]
+    y = np.shape(D_learning)[1] * 3 
+    z = np.shape(D_learning)[2]
+    D_learning_ = np.zeros((x,y,z))
+    D_test_ = np.zeros((x,y,z))
+    
+    for i in range(0, np.shape(D_learning)[1]) :
+        for j in range(0, np.shape(D_learning)[2]) :
+
+            resp3 = np.convolve(D_learning[:,i,j], hrf3)
+            resp3 = resp3[0:np.shape(D_learning[:,i,j])[0]]
+            D_learning_[:,i,j] = resp3
+            
+            resp3 = np.convolve(D_test[:,i,j], hrf3)
+            resp3 = resp3[0:np.shape(D_test[:,i,j])[0]]
+            D_test_[:,i,j] = resp3
+            
+            resp4 = np.convolve(D_learning[:,i,j], hrf4)
+            resp4 = resp4[0:np.shape(D_learning[:,i,j])[0]]
+            D_learning_[:,i+np.shape(D_learning)[1],j] = resp4
+        
+            resp4 = np.convolve(D_test[:,i,j], hrf4)
+            resp4 = resp4[0:np.shape(D_test[:,i,j])[0]]
+            D_test_[:,i+np.shape(D_learning)[1],j] = resp4
+        
+            resp5 = np.convolve(D_learning[:,i,j], hrf5)
+            resp5 = resp5[0:np.shape(D_learning[:,i,j])[0]]
+            D_learning_[:,i+2*np.shape(D_learning)[1],j] = resp5
+        
+            resp5 = np.convolve(D_test[:,i,j], hrf5)
+            resp5 = resp5[0:np.shape(D_test[:,i,j])[0]]
+            D_test_[:,i+2*np.shape(D_learning)[1],j] = resp5
+
+    # D_learning(bad_scores_learning_ind,:,:)=[];
+    # D_test(bad_scores_testing_ind,:,:)=[];
+    # D_learning_(bad_scores_learning_ind,:,:)=[];
+    # D_test_(bad_scores_testing_ind,:,:)=[];  
+
+    D_learning = np.delete(D_learning, bad_scores_learning_ind, 0)
+    D_test = np.delete(D_test, bad_scores_testing_ind, 0)
+    D_learning_ = np.delete(D_learning_, bad_scores_learning_ind, 0)
+    D_test_ = np.delete(D_test_, bad_scores_testing_ind, 0)
     
     ### Execution : estimation regul param lambda
     
