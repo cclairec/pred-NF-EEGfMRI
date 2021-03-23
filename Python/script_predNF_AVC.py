@@ -29,8 +29,9 @@ for p in patients :
             for t in test_runs :
                 # Paths to load/save 
                 data_path = "C:/Users/cpinte/Documents/Data/Patients/"
-                res_path = "C:/Users/cpinte/Documents/Results_Python/Res_{}_s{}_l{}_t{}/Res_{}_s{}_l{}_t{}.mat".format(p,s,l,t,p,s,l,t)
+                res_path = "C:/Users/cpinte/Documents/Results_Python/Res_{}_s{}_l{}_t{}".format(p,s,l,t)
+                res_mat_path = "C:/Users/cpinte/Documents/Results_Python/Res_{}_s{}_l{}_t{}/Res_{}_s{}_l{}_t{}.mat".format(p,s,l,t,p,s,l,t)
                 # Call model estimation
-                Res = pred_NF_from_eeg_fmri_1model_AVC(data_path, p, s, l, t, mod='fmri', electrodes='motor')              
+                Res = pred_NF_from_eeg_fmri_1model_AVC(data_path, res_path, p, s, l, t, mod='fmri', electrodes='motor')              
                 # Save results object
-                sio.savemat(res_path, {'Res':[Res]}) # import into Matlab with : data = load(res_path); Res = [data.Res{:}];
+                sio.savemat(res_mat_path, {'Res':[Res]}) # import into Matlab with : data = load(res_path); Res = [data.Res{:}];

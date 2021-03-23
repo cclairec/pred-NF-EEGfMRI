@@ -17,6 +17,10 @@ import scipy
 from scipy import stats
 from scipy.signal import savgol_filter
 import pickle
+import time
+from matplotlib import pyplot as plt
+from lambda_choice import lambda_choice
+
 
 #====================================================================
 # Initialisation : Format of logs
@@ -99,12 +103,13 @@ def spm_hrf(RT,p):
 # Main function
 #====================================================================
 
-def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_run, mod='fmri', nb_bandfreq=10, reg_function='fistaL1', clean_test=1, electrodes='all') :
+def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_run, test_run, mod='fmri', nb_bandfreq=10, reg_function='fistaL1', clean_test=1, electrodes='all') :
     '''
     Estimate model and predict NF scores.
 
             Parameters:
                     dataPath (string): path to retrieve data.
+                    resPath (string): path to save results.
                     suj_ID (string): the patient ID.
                     session (string): the session, must contain subfolders MI_PRE, NF1, NF2, NF3.
                     learn_run (string): the run that we will use for learning, must be NF1 NF2 or NF3.
@@ -153,7 +158,7 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
     
     ### Removing bad segments
     logger.info("* Removing bad segments from EEG signals")
-    logger.info("Bad segments already removed")
+    logger.info("--- Bad segments already removed")
     
     ### Identifying the corresponding removed times to the NF scores
     logger.info("* Identifying the corresponding removed times")
@@ -216,16 +221,16 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
     logger.info("* NF score to be learned, with mod : {}".format(mod))
 
     if (mod == 'eeg') :
-        logger.info("Mod chosen : {}".format(mod))
+        logger.info("--- Mod chosen : {}".format(mod))
         #X = X_eeg_learn_smooth_Lap
         #X_test = X_eeg_test_smooth_Lap
         logger.info("Not implemented")
     elif (mod == 'fmri') :
-        logger.info("Mod chosen : {}".format(mod))
+        logger.info("--- Mod chosen : {}".format(mod))
         X = X_fmri_reshape_learn_smooth
         X_test = X_fmri_reshape_test
     elif (mod == 'both') :
-        logger.info("Mod chosen : {}".format(mod))
+        logger.info("--- Mod chosen : {}".format(mod))
         #X = [X_eeg_learn_smooth_Lap + X_fmri_reshape_learn_smooth]
         #X_test = [X_eeg_test_smooth_Lap+ X_fmri_reshape_test]
         #weight = 0.5
@@ -242,10 +247,10 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
     all_channels = np.arange(0,64)
     ind_elect = np.arange(0,64) # electrodes to exclude
     if (electrodes == 'all') :
-        logger.info("All electrodes chosen")
+        logger.info("--- All electrodes chosen")
         ind_elect_eeg_exclud = []
     elif (electrodes == 'motor') :
-        logger.info("Motor electrodes chosen")
+        logger.info("--- Motor electrodes chosen")
         ind_elect_eeg_exclud = [element for element in ind_elect if element not in motor_channels] 
     else :
         logger.error("electrodes (string): use all channels or only motor channels, must be 'all' or 'motor'")
@@ -337,11 +342,8 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
     p = [3,16,1,1,3,0,32]
     hrf3 = spm_hrf( 1/4, p )
     
-    x = np.shape(D_learning)[0]
-    y = np.shape(D_learning)[1] * 3 
-    z = np.shape(D_learning)[2]
-    D_learning_ = np.zeros((x,y,z))
-    D_test_ = np.zeros((x,y,z))
+    D_learning_ = np.zeros((np.shape(D_learning)[0],np.shape(D_learning)[1] * 3,np.shape(D_learning)[2]))
+    D_test_ = np.zeros((np.shape(D_test)[0],np.shape(D_test)[1] * 3,np.shape(D_test)[2]))
     
     for i in range(0, np.shape(D_learning)[1]) :
         for j in range(0, np.shape(D_learning)[2]) :
@@ -370,17 +372,98 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, suj_ID, session, learn_run, test_
             resp5 = resp5[0:np.shape(D_test[:,i,j])[0]]
             D_test_[:,i+2*np.shape(D_learning)[1],j] = resp5
 
-    # D_learning(bad_scores_learning_ind,:,:)=[];
-    # D_test(bad_scores_testing_ind,:,:)=[];
-    # D_learning_(bad_scores_learning_ind,:,:)=[];
-    # D_test_(bad_scores_testing_ind,:,:)=[];  
-
     D_learning = np.delete(D_learning, bad_scores_learning_ind, 0)
     D_test = np.delete(D_test, bad_scores_testing_ind, 0)
     D_learning_ = np.delete(D_learning_, bad_scores_learning_ind, 0)
     D_test_ = np.delete(D_test_, bad_scores_testing_ind, 0)
     
-    ### Execution : estimation regul param lambda
+    ### Cleaning the design matrices for learning and testing
+    logger.info("* Cleaning the design matrices")
+    
+    # Cleaning the design matrix for learning step, by thresholding bad observations
+    mean_3std_learn = np.mean(np.mean(D_learning[(D_learning!=0)])) + 3*np.mean(np.std(D_learning[(D_learning!=0)]))
+    D_learning[(D_learning>mean_3std_learn)] = mean_3std_learn
+    
+    mean_3std_learn = np.mean(np.mean(D_learning_[(D_learning_!=0)])) + 3*np.mean(np.std(D_learning_[(D_learning_!=0)]))
+    D_learning_[(D_learning_>mean_3std_learn)] = mean_3std_learn
+    
+    # Cleaning the design matrix for test step, by thresholding bad observations
+    if (clean_test==1) :
+
+        mean_3std_test = np.mean(np.mean(D_test[(D_test!=0)])) + 3*np.mean(np.std(D_test[(D_test!=0)]))
+        D_test[(D_test>mean_3std_test)] = mean_3std_test
+    
+        mean_3std_test = np.mean(np.mean(D_test_[(D_test_!=0)])) + 3*np.mean(np.std(D_test_[(D_test_!=0)]))
+        D_test_[(D_test_>mean_3std_test)] = mean_3std_test
+    
+    # Prepare D_learning_old and D_test_old
+    if (mod == 'both') or (mod == 'fmri') :
+        D_learning_old = np.zeros((np.shape(D_learning)[0],np.shape(D_learning)[1] + np.shape(D_learning_)[1],np.shape(D_learning)[2]))
+        D_test_old = np.zeros((np.shape(D_test)[0],np.shape(D_test)[1] + np.shape(D_test_)[1],np.shape(D_test)[2]))
+        
+        for i in range(0, np.shape(D_learning)[0]) :
+            D_learning_old[i,:,:] = np.vstack( [np.squeeze(D_learning[i,:,:]), np.squeeze(D_learning_[i,:,:])] )
+
+        for i in range(0, np.shape(D_test)[0]) :
+            D_test_old[i,:,:] = np.vstack( [np.squeeze(D_test[i,:,:]), np.squeeze(D_test_[i,:,:])] )
+
+    elif (mod == 'eeg') :
+        D_learning_old = D_learning.copy()
+        D_test_old = D_test.copy()
+        
+    else :
+        logger.error("mod (string): model to learn, must be 'eeg', 'fmri' or 'both'.")
+        return 0
+    
+    ### Execution 
+    logger.info("* Execution ...")
+    
+    # Cases of same run used
+    if (learn_run == test_run) :
+        learning_block = np.arange( blocsize*1 , np.round(np.shape(D_learning_old)[0]/2) , dtype=int )
+        testing_block = np.arange( learning_block[-1]+1 , np.shape(D_test_old)[0] , dtype=int )
+    else :
+        learning_block = np.arange( blocsize*1 , np.shape(D_learning_old)[0] , dtype=int )
+        testing_block = np.arange( 0 , np.shape(D_test_old)[0] , dtype=int )
+    
+    # Timer
+    tic = time.time()
+    
+    testing_dummy_data = 0
+    if (testing_dummy_data == 1) :
+        logger.error("Not implemented")
+        return 0
+    else :
+        rep_learning = X[learning_block] # removing the first bloc from learning phase
+        rep_test = X_test[testing_block]
+        
+        D_learning = D_learning_old[learning_block,:,:]
+        matrix_ones = np.ones((np.shape(D_learning)[0], np.shape(D_learning)[1]))
+        matrix_ones = matrix_ones[..., np.newaxis]
+        D_learning = np.concatenate((D_learning,matrix_ones),axis=2)
+    
+        D_test = D_test_old[testing_block,:,:]
+        matrix_ones = np.ones((np.shape(D_test)[0], np.shape(D_test)[1]))
+        matrix_ones = matrix_ones[..., np.newaxis]
+        D_test = np.concatenate((D_test,matrix_ones),axis=2)
+    
+    ### Estimating regularisation parameter lambda 
+    logger.info("* Estimating lambda for method : {}".format(reg_function))
+    
+    if (reg_function == 'lasso') :
+        #lambdas=[0.1:0.2:10];
+        logger.error("Not implemented")
+        return 0
+    elif (reg_function == 'fistaL1') :
+        lambdas = np.arange(0,2000, 100) # initial values
+        #lambdas = np.arange(0,50000, 500) # test
+    else :
+        logger.error("reg_function (string): regularisation function, must be 'lasso' (matlab), 'fistaL1' or 'L12'")
+        return 0
+    
+    regul_eeg = lambda_choice(D_learning, rep_learning, nb_bandfreq, reg_function, lambdas, disp_fig)
+    #plt.savefig('{}/Fig1.png'.format(resPath))
+    logger.info("--- lambda = {}".format(regul_eeg))
     
     ### Optimization : Forward backward optimization
     print('debug')
