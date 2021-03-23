@@ -18,7 +18,7 @@ blocsize=160;nbloc=8;
 minval = -300;
 maxval = 300;
 
-figure;
+figure('units','normalized','outerposition',[0 0 1 1])
 % fMRI pred VS fMRI gtruth
 subplot(2,2,1);
 hold off;
