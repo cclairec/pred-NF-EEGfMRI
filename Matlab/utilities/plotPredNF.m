@@ -2,14 +2,25 @@ function [] = plotPredNF(Res)
 %PLOTPREDNF Plot the NF prediction with the ground truth
 %   Res : Res object, output of pref_NF_from_eeg_fmri_1model_AVC.m
 
-if size(Res.NF_estimated_fMRI) == size(Res.NF_fMRI_test)
-    NF_estimated_fMRI = Res.NF_estimated_fMRI;
-    NF_fMRI_test = Res.NF_fMRI_test;
-    NF_EEG_test = Res.NF_EEG_test;
-else
+% if size(Res.NF_estimated_fMRI) == size(Res.NF_fMRI_test)
+%     NF_estimated_fMRI = Res.NF_estimated_fMRI;
+%     NF_fMRI_test = Res.NF_fMRI_test;
+%     NF_EEG_test = Res.NF_EEG_test;
+% else
+%     half = size(Res.NF_estimated_fMRI,2);
+%     NF_estimated_fMRI(1:half) = Res.NF_estimated_fMRI;
+%     NF_estimated_fMRI(half+1:half+half) = Res.NF_estimated_fMRI;
+%     NF_fMRI_test = Res.NF_fMRI_test;
+%     NF_EEG_test = Res.NF_EEG_test;
+% end
+
+if strcmp(Res.learning_session,Res.test_session)
     half = size(Res.NF_estimated_fMRI,2);
-    NF_estimated_fMRI(1:half) = Res.NF_estimated_fMRI;
-    NF_estimated_fMRI(half+1:half+half) = Res.NF_estimated_fMRI;
+    NF_estimated_fMRI = Res.NF_estimated_fMRI;
+    NF_fMRI_test = Res.NF_fMRI_test(:, half+1:end );
+    NF_EEG_test = Res.NF_EEG_test(:, half+1:end );
+else
+    NF_estimated_fMRI = Res.NF_estimated_fMRI;
     NF_fMRI_test = Res.NF_fMRI_test;
     NF_EEG_test = Res.NF_EEG_test;
 end
