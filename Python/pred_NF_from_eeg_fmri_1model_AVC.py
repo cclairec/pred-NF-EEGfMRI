@@ -455,13 +455,13 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
         logger.error("Not implemented")
         return 0
     elif (reg_function == 'fistaL1') :
-        lambdas = np.arange(0,2000, 100) # initial values
+        lambdas = np.arange(0,2000+1, 100) # initial values
         #lambdas = np.arange(0,50000, 500) # test
     else :
         logger.error("reg_function (string): regularisation function, must be 'lasso' (matlab), 'fistaL1' or 'L12'")
         return 0
     
-    regul_eeg = lambda_choice(D_learning, rep_learning, nb_bandfreq, reg_function, lambdas, disp_fig)
+    regul_eeg = lambda_choice(D_learning, rep_learning, nb_bandfreq, reg_function, lambdas, disp_fig, logger)
     #plt.savefig('{}/Fig1.png'.format(resPath))
     logger.info("--- lambda = {}".format(regul_eeg))
     
