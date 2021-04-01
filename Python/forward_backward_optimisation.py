@@ -70,7 +70,7 @@ def perform_fb(x, L, method, niter, A, y, l, rho) :
     
     R = []
     for i in range(0,niter) :
-        print(i)
+        #print(i)
         f = F(x,l)
         if (len(np.shape(A)) == 3) :
             g = G3(A,x,y)
@@ -93,14 +93,14 @@ def perform_fb(x, L, method, niter, A, y, l, rho) :
                  break
 
         else :
-            print('Error')
+            print('Error in perform_fb : name isnt fista')
             return
     return x
 
 #====================================================================
 # forward_backward_optimisation
 #====================================================================
-def forward_backward_optimisation(A, y, l, method_i, rho) :
+def forward_backward_optimisation(A, y, l, method_i=1, rho=1500) :
     '''
     Compute the optimal activation pattern : alpha.
 
@@ -115,7 +115,6 @@ def forward_backward_optimisation(A, y, l, method_i, rho) :
                     alpha (array): optimal activation pattern
     '''
     
-    p = np.shape(A)[0]
     n = np.shape(A)[1]*np.shape(A)[2]
     
     # Lipschitz constant.
@@ -134,10 +133,6 @@ def forward_backward_optimisation(A, y, l, method_i, rho) :
     # List of benchmarked algorithms.
     methods = ['fb', 'fista', 'nesterov']
     
-    options = {'report':'x', \
-           'niter':6000, \
-           'method':methods[method_i] \
-          }
     method = methods[method_i]
     niter = 6000
         
@@ -146,9 +141,6 @@ def forward_backward_optimisation(A, y, l, method_i, rho) :
         x_init = np.zeros( (np.shape(A)[1], np.shape(A)[2]) )
 
     x = perform_fb(x_init, 2*L, method, niter, A, y, l, rho)
-    
-    print(x)
-    
-    
-    alpha = 0
+        
+    alpha = x
     return alpha

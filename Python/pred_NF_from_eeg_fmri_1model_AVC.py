@@ -20,6 +20,7 @@ import pickle
 import time
 from matplotlib import pyplot as plt
 from lambda_choice import lambda_choice
+from forward_backward_optimisation import forward_backward_optimisation
 
 
 #====================================================================
@@ -463,37 +464,91 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
     
     regul_eeg = lambda_choice(D_learning, rep_learning, nb_bandfreq, reg_function, lambdas, disp_fig, logger)
     #plt.savefig('{}/Fig1.png'.format(resPath))
+    
+    plt.gcf().savefig('{}/Fig1.png'.format(resPath))
+    plt.show()
+    
     logger.info("--- lambda = {}".format(regul_eeg))
     
-    ### Optimization : Forward backward optimization
-    print('debug')
+    ### Forward Backward Optimization with the chosen lambda + estimate NF scores
+    logger.info("* Computing optimization with the chosen lambda")
+    if (reg_function == 'lasso') :
+        logger.error("Not implemented")
+        return 0
+    
+    elif (reg_function == 'fistaL1') :
+        alpha = forward_backward_optimisation(D_learning, rep_learning.T, regul_eeg)
+        
+        NF_estimated = np.zeros(np.shape(D_test)[0])
+        for t in range(0,np.shape(D_test)[0]) :
+            NF_estimated[t] = np.trace( np.matmul(np.squeeze(D_test[t,:,:]).T,alpha) )
+
+        predicted_values = np.zeros(np.shape(D_learning)[0])
+        for t in range(0,np.shape(D_learning)[0]) :
+            predicted_values[t] = np.trace( np.matmul(np.squeeze(D_learning[t,:,:]).T,alpha) )
+    
+    else :
+        logger.error("reg_function (string): regularisation function, must be 'lasso' (matlab), 'fistaL1' or 'L12'")
+        return 0
+    
+    # End Timer
+    toc = time.time()
+    t = toc - tic
+    
+    ### Smoothing NF scores
+    logger.info("* Smoothing the NF scores obtained")
+    smooth_NF = 1
+    if (smooth_NF == 1) :
+        smooth_wind_test = 2
+        NF_estimated_notsmoothed = NF_estimated.copy()
+        for i in range(0,len(NF_estimated)) :
+            if (i < smooth_wind_test) :
+                NF_estimated[i] = np.mean(NF_estimated_notsmoothed[0:i+1])
+            else :
+                NF_estimated[i] = np.mean(NF_estimated_notsmoothed[i-smooth_wind_test:i+1])
+
+    if (mod == 'eeg') :
+        weight = 0
+        
+    ### Preparing results figures
+    logger.info("* Preparing results figures")
+    if (reg_function == 'fistaL1') :
+        # EEG start at 65+64+1=130, since its design matrix is at the end : fMRI4s, fMRI5s, EEG.
+        nb_mat_design = int(np.shape(alpha)[0] / 64)
+        ch1 = 0
+        ch64 = 63
+        filter_estimated = []
+        for nmd in range(0,nb_mat_design) :
+            end = np.shape(alpha)[1]
+            alpha_1 = alpha[ch1:ch64+1,0:end-1]
+            alpha_1 = np.delete(alpha_1,31,0)
+            filter_estimated.append(alpha_1)
+            ch1 = ch64 + 1
+            ch64 = ch1 + 63
+
+        filter_estimated_eeg = filter_estimated[nb_mat_design-1]
+        filter_estimated_fmri = filter_estimated[0:nb_mat_design-1]
+
+    elect_kept = np.ones(64)
+    elect_kept[ind_elect_eeg_exclud] = 0
+    
+    if (disp_fig == 1) :      
+        # # plot 1
+        # plt.plot(lambdas, CV_mean_, label = "cv error", color='blue')  
+        # # plot 2
+        # plt.plot(lambdas, Cost_train_mean, label = "training error", color='red')
+        # # plot 3
+        # plt.plot(lambdas, biais_var, label = "cv error + training error", color='yellow', marker='.')
+          
+        # plt.xlabel('lambda')
+        # plt.ylabel('error')
+        # plt.title('lambda choice')
+        # plt.legend()
+        # # plt.show() # out of this function to save the fig
+        logger.info("todo figures plotElecPotentials")
     
     ### Saving results into a Matlab-like object
     logger.info("* Saving results")
-
-    learn_run = 0
-    test_run = 0
-    alpha = 0
-    NF_estimated = 0
-    filter_estimated_eeg = 0
-    filter_estimated_fmri = 0
-    
-    X_fmri_reshape_test = 0
-    X_eeg_test_smooth_Lap = 0
-    X_eeg_learn_smooth_Lap = 0
-    X_fmri_reshape_learn_smooth = 0
-    rep_test = 0
-    
-    nb_bandfreq = 0
-    regul_eeg = 0
-    t = 0
-    D_test = 0
-    D_learning = 0
-    index_freq_band_used = 0
-    f_interval = 0
-    elect_kept = 0
-    bad_scores_testing_ind = 0
-    bad_scores_learning_ind = 0
 
     Res = {'learning_session':learn_run, \
            'test_session':test_run, \
