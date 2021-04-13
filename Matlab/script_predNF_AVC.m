@@ -1,8 +1,12 @@
+%patients={'P002';'P003'; 'P004'; 'P015'; 'P017'};
+%sessions={'S1s1'; 'S1s2'; 'S2s1'; 'S3s1'};
+%learn_runs={'NF1'; 'NF2'; 'NF3'};
+%test_runs=learn_runs;
 
-patients={'P002';'P003'; 'P004'; 'P015'; 'P017'};
-sessions={'S1s1'; 'S1s2'; 'S2s1'; 'S3s1'};
-learn_runs={'NF1'; 'NF2'; 'NF3'};
-test_runs=learn_runs;
+patients={'P002'};
+sessions={'S1s1'};
+learn_runs={'NF2'};
+test_runs={'NF2'};
 for p=1:length(patients)
     for s=1:length(sessions)
         for l=1:length(learn_runs)

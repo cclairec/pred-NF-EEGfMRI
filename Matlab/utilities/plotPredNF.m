@@ -14,16 +14,20 @@ function [] = plotPredNF(Res)
 %     NF_EEG_test = Res.NF_EEG_test;
 % end
 
-if strcmp(Res.learning_session,Res.test_session)
-    half = size(Res.NF_estimated_fMRI,2);
-    NF_estimated_fMRI = Res.NF_estimated_fMRI;
-    NF_fMRI_test = Res.NF_fMRI_test(:, half+1:end );
-    NF_EEG_test = Res.NF_EEG_test(:, half+1:end );
-else
-    NF_estimated_fMRI = Res.NF_estimated_fMRI;
-    NF_fMRI_test = Res.NF_fMRI_test;
-    NF_EEG_test = Res.NF_EEG_test;
-end
+% if strcmp(Res.learning_session,Res.test_session)
+%     half = size(Res.NF_estimated_fMRI,2);
+%     NF_estimated_fMRI = Res.NF_estimated_fMRI;
+%     NF_fMRI_test = Res.NF_fMRI_test(:, half+1:end );
+%     NF_EEG_test = Res.NF_EEG_test(:, half+1:end );
+% else
+%     NF_estimated_fMRI = Res.NF_estimated_fMRI;
+%     NF_fMRI_test = Res.NF_fMRI_test;
+%     NF_EEG_test = Res.NF_EEG_test;
+% end
+
+NF_estimated_fMRI = Res.NF_estimated_fMRI;
+NF_fMRI_test = Res.NF_fMRI_test;
+NF_EEG_test = Res.NF_EEG_test;
 
 blocsize=160;nbloc=8;
 minval = -300;

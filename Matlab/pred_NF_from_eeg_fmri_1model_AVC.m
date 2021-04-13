@@ -166,7 +166,7 @@ end
 % Removing some electrods (the noisy ones, like occipital) from the design matrix of both steps:
 disp(['  *  Removing some electrods (the noisy ones, like occipital) from the design matrix of both steps:']);
 
-motor_channels = [5,6,18,21,22,23,24,25,26,27,28,35,36,41,42,43,44,49,50,64]; % electrods to keep, base 64 already
+motor_channels = [5,6,17,18,21,22,23,24,25,26,27,28,33,34,35,36,41,42,43,44,49,50,64]; % electrods to keep, base 64 already
 frontal_channels = [33 34 17]; % electrods to keep, base 64 already. Removed for patients.
 all_channels = [1:64];
 ind_elect_eeg_exclud = 1:64; % electrodes to exclude
@@ -296,13 +296,16 @@ end
 disp(['  **  Execution...']);
 clear alpha D_test_fmri D_learning_fmri;
 
-if strcmp(learn_run,test_run) % then cut the session in 2 blocks:
-    learning_block=blocsize*1+1:round(length(D_learning_old)/2);
-    testing_block = learning_block(end)+1:length(D_test_old);
-else
-    learning_block=blocsize*1+1:length(D_learning_old);
-    testing_block=1:length(D_test_old);
-end
+% if strcmp(learn_run,test_run) % then cut the session in 2 blocks:
+%     learning_block=blocsize*1+1:round(length(D_learning_old)/2);
+%     testing_block = learning_block(end)+1:length(D_test_old);
+% else
+%     learning_block=blocsize*1+1:length(D_learning_old);
+%     testing_block=1:length(D_test_old);
+% end
+
+learning_block=blocsize*1+1:length(D_learning_old);
+testing_block=1:length(D_test_old);
 
 tic
 testing_dummy_data = 0;
@@ -330,8 +333,9 @@ disp(['  **  Estimating regularisation parameter lambda for method ' reg_functio
 if strcmp(reg_function, 'lasso')
     lambdas=[0.1:0.2:10];
 elseif strcmp(reg_function, 'fistaL1')
-    lambdas=[0:100:5000]; %initial values
+    %lambdas=[0:100:2000]; %initial values
     %lambdas=[0:500:50000]; % test
+    lambdas=[0:200:5000];
 end
 
 % Creating object input for testing
@@ -428,9 +432,9 @@ end
 %         title([reg_function ': lambda ' num2str(regul_eeg) '. estimated filter for band freq for EEG ' num2str(f_interval{index_freq_band_used(i)})]);
 %     end
     
-    plotElecPotentials(Emaps,sum(abs(filter_estimated_eeg(1:63,:)),2)',1), title(['estimated abs filter all band of freq for EEG']);
+    plotElecPotentials(Emaps,sum(abs(filter_estimated_eeg(1:63,:)),2)',1), title(['X0 estimated abs filter all band of freq for EEG']);
     saveas(gcf,['',ResPath,'Fig2.png'])
-    plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['estimated filter all band of freq for EEG']);
+    plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['X0 estimated filter all band of freq for EEG']);
     saveas(gcf,['',ResPath,'Fig3.png'])
     
 %     kk=1;
@@ -442,9 +446,9 @@ end
 %         kk=kk+1;
 %     end
     
-    plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['estimated abs filter all band of freq for fMRI']);
+    plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['X3 X4 X5 estimated abs filter all band of freq for fMRI']);
     saveas(gcf,['',ResPath,'Fig4.png'])
-    plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['estimated filter all band of freq for fMRI']);
+    plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['X3 X4 X5 estimated filter all band of freq for fMRI']);
     saveas(gcf,['',ResPath,'Fig5.png'])
 
     plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['Electrodes kept in the model']);  
