@@ -8,8 +8,8 @@
 % clean_test: boolean, to clean or not the design matrix of data test.
 
 function Res = pred_NF_from_eeg_fmri_1model_AVC(suj_ID, session, learn_run, test_run,mod, nb_bandfreq, reg_function,clean_test)
-DataPath='C:/Users/cpinte/Documents/Data/Patients'; % Where subjects are stored
-ResPath=['C:/Users/cpinte/Documents/Results/Res_', suj_ID ,'_s' ,session, '_l', learn_run, '_t', test_run, '/']; % Where figures are saved
+DataPath='C:/Users/cpinte/Documents/Data/Sujets_sains'; % Where subjects are stored
+ResPath=['C:/Users/cpinte/Documents/Results/Sujets_sains/Res_', suj_ID ,'_' ,session, '_', learn_run, '_', test_run, '/']; % Where figures are saved
 if not(isfolder(ResPath))
     mkdir(ResPath)
 end
@@ -19,14 +19,36 @@ end
 
 if nargin >=4
         disp(['  *  Loading EEG data for subject : ' suj_ID ' session ' session ' learning run ' learn_run]);
-        suj_learning_EEG=load([DataPath '/' suj_ID '/' suj_ID '_NFEEG/' session '/' learn_run '/EEG_features_Laplacian.mat']);
+        suj_learning_EEG=load([DataPath '/' suj_ID '/NF_eeg/d_' suj_ID '_' session '_' learn_run '_NFeeg_scores.mat']);
         disp(['  *  Loading fMRI data for subject : ' suj_ID ' session ' session ' learning run ' learn_run]);
-        suj_learning_fMRI=load([DataPath '/' suj_ID '/' suj_ID '_NFfMRI/' session '/roi_all_sessions/' learn_run '/fMRI_features_sma_and_m1.mat']);
-                disp(['  *  Loading EEG data for subject : ' suj_ID ' session ' session ' testing run ' test_run]);
-        suj_testing_EEG=load([DataPath '/' suj_ID '/' suj_ID '_NFEEG/' session '/' test_run '/EEG_features_Laplacian.mat']);
+        suj_learning_fMRI=load([DataPath '/' suj_ID '/NF_bold/d_' suj_ID '_' session '_' learn_run '_NFbold_scores.mat']);
+        disp(['  *  Loading EEG data for subject : ' suj_ID ' session ' session ' testing run ' test_run]);
+        suj_testing_EEG=load([DataPath '/' suj_ID '/NF_eeg/d_' suj_ID '_' session '_' test_run '_NFeeg_scores.mat']);
         disp(['  *  Loading fMRI data for subject : ' suj_ID ' session ' session ' testing run ' test_run]);
-        suj_testing_fMRI=load([DataPath '/' suj_ID '/' suj_ID '_NFfMRI/' session '/roi_all_sessions/' test_run '/fMRI_features_sma_and_m1.mat']);
+        suj_testing_fMRI=load([DataPath '/' suj_ID '/NF_bold/d_' suj_ID '_' session '_' test_run '_NFbold_scores.mat']);
+        suj_all = load([DataPath '/' suj_ID '/S21_all_infos.mat']);
 
+        if strcmp(learn_run,'run-01')
+            badseg_learn = suj_all.S21_all.nf1.eeg.pp2.data.data.event;
+        end
+        if strcmp(test_run,'run-01')
+            badseg_test = suj_all.S21_all.nf1.eeg.pp2.data.data.event;
+        end
+        
+        if strcmp(learn_run,'run-02')
+            badseg_learn = suj_all.S21_all.nf2.eeg.pp2.data.data.event;
+        end
+        if strcmp(test_run,'run-02')
+            badseg_test = suj_all.S21_all.nf2.eeg.pp2.data.data.event;
+        end
+        
+        if strcmp(learn_run,'run-03')
+            badseg_learn = suj_all.S21_all.nf3.eeg.pp2.data.data.event;
+        end
+        if strcmp(test_run,'run-03')
+            badseg_test = suj_all.S21_all.nf3.eeg.pp2.data.data.event;
+        end
+        
 end
 
 if nargin <5
@@ -57,32 +79,42 @@ f_win=ceil((f_M-f_m)/nb_bandfreq); % windows frequency size
 disp(['  *  Reshaping EEG signals of learning and testing sessions']);
 clear EEG_signal_reshape_learning EEG_signal_reshape_test
 
-EEG_signal_reshape_learning(:,:) = reshape(suj_learning_EEG.EEG_FEAT.data, 64, 64000);
-EEG_signal_reshape_test(:,:) = reshape(suj_testing_EEG.EEG_FEAT.data, 64, 64000);
+EEG_signal_reshape_learning(:,:) = reshape(suj_learning_EEG.NF_eeg.eegdata, 64, 64000);
+EEG_signal_reshape_test(:,:) = reshape(suj_testing_EEG.NF_eeg.eegdata, 64, 64000);
 
 % removing bad segments from signals:
 disp('  * Bad segments already removed from EEG signal');
 % badseg_learning = [suj_learning.eeg.pp2.data.data.event(arrayfun(@(x)strcmp(x.type,'BAD'),suj_learning.eeg.pp2.data.data.event)).latency];
 % badseg_testing = [suj_testing.eeg.pp2.data.data.event(arrayfun(@(x)strcmp(x.type,'BAD'),suj_testing.eeg.pp2.data.data.event)).latency];
-% 
-% for jj=1:length(badseg_learning)
-% EEG_signal_reshape_learning(:,badseg_learning(jj):badseg_learning(jj)+199) = 0;
-% end
-% for jj=1:length(badseg_testing)
-% EEG_signal_reshape_test(:,badseg_testing(jj):badseg_testing(jj)+199) = 0;
-% end
+
+badseg_learning = [badseg_learn(arrayfun(@(x)strcmp(x.type,'BAD'),badseg_learn)).latency];
+badseg_testing = [badseg_test(arrayfun(@(x)strcmp(x.type,'BAD'),badseg_test)).latency];
+
+for jj=1:length(badseg_learning)
+EEG_signal_reshape_learning(:,badseg_learning(jj):badseg_learning(jj)+199) = 0;
+end
+for jj=1:length(badseg_testing)
+EEG_signal_reshape_test(:,badseg_testing(jj):badseg_testing(jj)+199) = 0;
+end
 
 % Removing the corresponding removed times to the NF scores
 disp('  * Identifying bad segmentation');
-badseg_learning=suj_learning_EEG.EEG_FEAT.bad_segments(1:50:end);
-bad_scores_learning_ind=find(badseg_learning);
+%badseg_learning=suj_learning_EEG.EEG_FEAT.bad_segments(1:50:end);
+%bad_scores_learning_ind=find(badseg_learning);
+%bad_scores_learning_ind(bad_scores_learning_ind>1280)=1280
+badseg_learning = [badseg_learn(arrayfun(@(x)strcmp(x.type,'BAD'),badseg_learn)).latency];
+bad_scores_learning_ind = floor(badseg_learning/50);
 bad_scores_learning_ind(bad_scores_learning_ind>1280)=1280
 
-badseg_testing=suj_testing_EEG.EEG_FEAT.bad_segments(1:50:end);
-bad_scores_testing_ind=find(badseg_testing);
+% badseg_testing=suj_testing_EEG.EEG_FEAT.bad_segments(1:50:end);
+% bad_scores_testing_ind=find(badseg_testing);
+% bad_scores_testing_ind(bad_scores_testing_ind>1280)=1280
+badseg_testing = [badseg_test(arrayfun(@(x)strcmp(x.type,'BAD'),badseg_test)).latency];
+bad_scores_testing_ind = floor(badseg_testing/50);
 bad_scores_testing_ind(bad_scores_testing_ind>1280)=1280
+
 % Load Channel names
-load([ DataPath '/Chanlocs.mat']);
+load([ 'C:/Users/cpinte/Documents/Data/Patients/Chanlocs.mat']);
 k=0;
 for i=[1:31 33:64]
     k=k+1;
@@ -91,14 +123,14 @@ end
 
 % Extract NF_EEG:
 disp(['  *  Extracting NF_EEG scores']);
-X_eeg_learn_smooth_Lap = zscore(suj_learning_EEG.EEG_FEAT.smoothnf);
-X_eeg_test_smooth_Lap = zscore(suj_testing_EEG.EEG_FEAT.smoothnf);
+X_eeg_learn_smooth_Lap = zscore(suj_learning_EEG.NF_eeg.smoothnf);
+X_eeg_test_smooth_Lap = zscore(suj_testing_EEG.NF_eeg.smoothnf);
 
 % extract NF_fMRI:
 disp(['  *  Extracting NF_fMRI scores']);
 clear fmri_NF*
-fmri_NF_learn = suj_learning_fMRI.fMRI_FEAT(1).feat.nf; 
-fmri_NF_test= suj_testing_fMRI.fMRI_FEAT(1).feat.nf;
+fmri_NF_learn = suj_learning_fMRI.NF_bold.sma.smoothnf; 
+fmri_NF_test= suj_testing_fMRI.NF_bold.sma.smoothnf;
 kk=0;
 for ii=1:4:length(X_eeg_learn_smooth_Lap)-3 
     kk=kk+1;
@@ -107,12 +139,36 @@ for ii=1:4:length(X_eeg_learn_smooth_Lap)-3
         fmri_NF_reshape_test(k) = fmri_NF_test(kk);
     end
 end
-X_fmri_reshape= zscore(fmri_NF_reshape);%(fmri_NF_reshape-mean(fmri_NF_reshape))./(max( fmri_NF_reshape)-min(fmri_NF_reshape));
+X_fmri_reshape_learn_smooth= zscore(fmri_NF_reshape);%(fmri_NF_reshape-mean(fmri_NF_reshape))./(max( fmri_NF_reshape)-min(fmri_NF_reshape));
 X_fmri_reshape_test= zscore(fmri_NF_reshape_test);%((fmri_NF_reshape_test - mean(fmri_NF_reshape_test))./(max( fmri_NF_reshape_test)-min(fmri_NF_reshape_test)));
 
 % Smooth NF scores:
-X_fmri_reshape_learn_smooth = sgolayfilt(X_fmri_reshape, 3, smooth_param);
-X_fmri_reshape_test = sgolayfilt(X_fmri_reshape_test, 3, smooth_param);
+%X_fmri_reshape_learn_smooth = sgolayfilt(X_fmri_reshape, 3, smooth_param);
+%X_fmri_reshape_test = sgolayfilt(X_fmri_reshape_test, 3, smooth_param);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Test
+% fmri_NF_learn = suj_learning_fMRI.NF_bold.sma.smoothnf; 
+% fmri_NF_test= suj_testing_fMRI.NF_bold.sma.smoothnf;
+% kk=0;
+% for ii=1:4:length(X_eeg_learn_smooth_Lap)-3 
+%     kk=kk+1;
+%     for k=ii:ii+3
+%         fmri_NF_reshape(k) = fmri_NF_learn(kk);
+%         fmri_NF_reshape_test(k) = fmri_NF_test(kk);
+%     end
+% end
+% X_fmri_reshape= zscore(fmri_NF_reshape);%(fmri_NF_reshape-mean(fmri_NF_reshape))./(max( fmri_NF_reshape)-min(fmri_NF_reshape));
+% X_fmri_reshape_test= zscore(fmri_NF_reshape_test);%((fmri_NF_reshape_test - mean(fmri_NF_reshape_test))./(max( fmri_NF_reshape_test)-min(fmri_NF_reshape_test)));
+% 
+% %X_fmri_reshape_learn_smooth = sgolayfilt(X_fmri_reshape, 3, smooth_param);
+% %X_fmri_reshape_test = sgolayfilt(X_fmri_reshape_test, 3, smooth_param);
+% 
+% figure;
+% hold on;
+% plot1=plot(X_fmri_reshape_learn_smooth, 'c','LineWidth', 1); plot1.Color(4)=0.7;
+% plot2=plot(X_fmri_reshape, 'b','LineWidth', 1); plot2.Color(4)=0.7;
+% title('fMRI nf + sgolayfilt (Cyan) vs fMRI smoothnf (Blue)');
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % X are NF values:
 disp(['  *  NF score to be learned, with mod: ' mod]);
@@ -120,15 +176,15 @@ clear X X_test; pause(0.5);
 
 X_fmri_reshape_learn_smooth = X_fmri_reshape_learn_smooth.*50;
 
-X_fmri_reshape_learn_smooth(bad_scores_learning_ind)=[];
+X_fmri_reshape_learn_smooth(bad_scores_learning_ind)=0; %%%%%%%%%%%%% 00
 X_fmri_reshape_test = X_fmri_reshape_test.*50;
-X_fmri_reshape_test(bad_scores_testing_ind)=[];
+X_fmri_reshape_test(bad_scores_testing_ind)=0;
 
 X_eeg_test_smooth_Lap = X_eeg_test_smooth_Lap.*50;
-X_eeg_test_smooth_Lap(bad_scores_testing_ind)=[];
+X_eeg_test_smooth_Lap(bad_scores_testing_ind)=0;
 
 X_eeg_learn_smooth_Lap = X_eeg_learn_smooth_Lap.*50;
-X_eeg_learn_smooth_Lap(bad_scores_learning_ind)=[];
+X_eeg_learn_smooth_Lap(bad_scores_learning_ind)=0;
 
 if strcmp(mod,'eeg')
     X = X_eeg_learn_smooth_Lap;
@@ -257,10 +313,10 @@ for i=1:size(D_learning,2) % elect
 
     end
 end
-D_learning(bad_scores_learning_ind,:,:)=[];
-D_test(bad_scores_testing_ind,:,:)=[];
-D_learning_(bad_scores_learning_ind,:,:)=[];
-D_test_(bad_scores_testing_ind,:,:)=[];
+D_learning(bad_scores_learning_ind,:,:)=0; %%%%%%%%0
+D_test(bad_scores_testing_ind,:,:)=0;
+D_learning_(bad_scores_learning_ind,:,:)=0;
+D_test_(bad_scores_testing_ind,:,:)=0;
 
 
 
@@ -296,13 +352,16 @@ end
 disp(['  **  Execution...']);
 clear alpha D_test_fmri D_learning_fmri;
 
-if strcmp(learn_run,test_run) % then cut the session in 2 blocks:
-    learning_block=blocsize*1+1:round(length(D_learning_old)/2);
-    testing_block = learning_block(end)+1:length(D_test_old);
-else
-    learning_block=blocsize*1+1:length(D_learning_old);
-    testing_block=1:length(D_test_old);
-end
+% if strcmp(learn_run,test_run) % then cut the session in 2 blocks:
+%     learning_block=blocsize*1+1:round(length(D_learning_old)/2);
+%     testing_block = learning_block(end)+1:length(D_test_old);
+% else
+%     learning_block=blocsize*1+1:length(D_learning_old);
+%     testing_block=1:length(D_test_old);
+% end
+
+learning_block=blocsize*1+1:length(D_learning_old);
+testing_block=1:length(D_test_old);
 
 tic
 testing_dummy_data = 0;
@@ -332,6 +391,7 @@ if strcmp(reg_function, 'lasso')
 elseif strcmp(reg_function, 'fistaL1')
     lambdas=[0:80:2000]; %initial values
     %lambdas=[0:500:50000]; % test
+    %lambdas=5000;
 end
 
 % Creating object input for testing
@@ -428,9 +488,9 @@ end
 %         title([reg_function ': lambda ' num2str(regul_eeg) '. estimated filter for band freq for EEG ' num2str(f_interval{index_freq_band_used(i)})]);
 %     end
     
-    plotElecPotentials(Emaps,sum(abs(filter_estimated_eeg(1:63,:)),2)',1), title(['estimated abs filter all band of freq for EEG']);
+    plotElecPotentials(Emaps,sum(abs(filter_estimated_eeg(1:63,:)),2)',1), title(['X0 estimated abs filter all band of freq for EEG']);
     saveas(gcf,['',ResPath,'Fig2.png'])
-    plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['estimated filter all band of freq for EEG']);
+    plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['X0 estimated filter all band of freq for EEG']);
     saveas(gcf,['',ResPath,'Fig3.png'])
     
 %     kk=1;
@@ -442,9 +502,9 @@ end
 %         kk=kk+1;
 %     end
     
-    plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['estimated abs filter all band of freq for fMRI']);
+    plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['X3 X4 X5 estimated abs filter all band of freq for fMRI']);
     saveas(gcf,['',ResPath,'Fig4.png'])
-    plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['estimated filter all band of freq for fMRI']);
+    plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['X3 X4 X5 estimated filter all band of freq for fMRI']);
     saveas(gcf,['',ResPath,'Fig5.png'])
 
     plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['Electrodes kept in the model']);  

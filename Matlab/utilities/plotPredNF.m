@@ -2,28 +2,29 @@ function [] = plotPredNF(Res)
 %PLOTPREDNF Plot the NF prediction with the ground truth
 %   Res : Res object, output of pref_NF_from_eeg_fmri_1model_AVC.m
 
-% if size(Res.NF_estimated_fMRI) == size(Res.NF_fMRI_test)
-%     NF_estimated_fMRI = Res.NF_estimated_fMRI;
-%     NF_fMRI_test = Res.NF_fMRI_test;
-%     NF_EEG_test = Res.NF_EEG_test;
-% else
+% if strcmp(Res.learning_session,Res.test_session)
 %     half = size(Res.NF_estimated_fMRI,2);
-%     NF_estimated_fMRI(1:half) = Res.NF_estimated_fMRI;
-%     NF_estimated_fMRI(half+1:half+half) = Res.NF_estimated_fMRI;
+%     NF_estimated_fMRI = Res.NF_estimated_fMRI;
+%     NF_fMRI_test = Res.NF_fMRI_test(:, half+1:end );
+%     NF_EEG_test = Res.NF_EEG_test(:, half+1:end );
+% else
+%     NF_estimated_fMRI = Res.NF_estimated_fMRI;
 %     NF_fMRI_test = Res.NF_fMRI_test;
 %     NF_EEG_test = Res.NF_EEG_test;
 % end
 
-if strcmp(Res.learning_session,Res.test_session)
-    half = size(Res.NF_estimated_fMRI,2);
-    NF_estimated_fMRI = Res.NF_estimated_fMRI;
-    NF_fMRI_test = Res.NF_fMRI_test(:, half+1:end );
-    NF_EEG_test = Res.NF_EEG_test(:, half+1:end );
-else
     NF_estimated_fMRI = Res.NF_estimated_fMRI;
     NF_fMRI_test = Res.NF_fMRI_test;
     NF_EEG_test = Res.NF_EEG_test;
-end
+
+    NF_estimated_fMRI_corr = NF_estimated_fMRI;
+    NF_estimated_fMRI_corr(Res.bad_scores_testing_ind) = [];
+    
+    NF_fMRI_test_corr = NF_fMRI_test;
+    NF_fMRI_test_corr(Res.bad_scores_testing_ind) = [];
+    
+    NF_EEG_test_corr = NF_EEG_test;
+    NF_EEG_test_corr(Res.bad_scores_testing_ind) = [];
 
 blocsize=160;nbloc=8;
 minval = -300;
@@ -47,7 +48,7 @@ hold on;
 plot1=plot(zscore(NF_estimated_fMRI).*50, 'c','LineWidth', 1); plot1.Color(4)=0.7;
 plot2=plot(zscore(NF_fMRI_test).*50, 'b','LineWidth', 1); plot2.Color(4)=0.7;
 title('fMRI pred (Cyan) vs fMRI gtruth (Blue)');
-correlation_value = corr2(zscore(NF_estimated_fMRI),zscore(NF_fMRI_test));
+correlation_value = corr2(zscore(NF_estimated_fMRI_corr),zscore(NF_fMRI_test_corr));
 legend(sprintf('Correlation = %0.3f',correlation_value))
 
 % fMRI pred + EEG gtruth VS fMRI gtruth + EEG gtruth
@@ -67,7 +68,7 @@ hold on;
 plot3=plot((zscore(NF_estimated_fMRI)+zscore(NF_EEG_test)).*50, 'r','LineWidth', 1); plot3.Color(4)=0.7;
 plot4=plot((zscore(NF_fMRI_test)+zscore(NF_EEG_test)).*50, 'y','LineWidth', 1); plot4.Color(4)=0.7;
 title('fMRI pred + EEG gtruth (Red) vs fMRI gtruth + EEG gtruth (Yellow)');
-correlation_value = corr2(zscore(NF_estimated_fMRI)+zscore(NF_EEG_test),zscore(NF_fMRI_test)+zscore(NF_EEG_test));
+correlation_value = corr2(zscore(NF_estimated_fMRI_corr)+zscore(NF_EEG_test_corr),zscore(NF_fMRI_test_corr)+zscore(NF_EEG_test_corr));
 legend(sprintf('Correlation = %0.3f',correlation_value))
 
 % EEG gtruth VS fMRI gtruth + EEG gtruth
@@ -87,7 +88,7 @@ hold on;
 plot5=plot((zscore(NF_EEG_test)).*50, 'g','LineWidth', 1); plot5.Color(4)=0.7;
 plot6=plot((zscore(NF_fMRI_test)+zscore(NF_EEG_test)).*50, 'y','LineWidth', 1); plot6.Color(4)=0.7;
 title('EEG gtruth (Green) vs fMRI gtruth + EEG gtruth (Yellow)');
-correlation_value = corr2(zscore(NF_EEG_test),zscore(NF_fMRI_test)+zscore(NF_EEG_test));
+correlation_value = corr2(zscore(NF_EEG_test_corr),zscore(NF_fMRI_test_corr)+zscore(NF_EEG_test_corr));
 legend(sprintf('Correlation = %0.3f',correlation_value))
 end
 
