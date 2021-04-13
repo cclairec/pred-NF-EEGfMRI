@@ -37,4 +37,4 @@ for p in patients :
                 # Call model estimation
                 Res = pred_NF_from_eeg_fmri_1model_AVC(data_path, res_path, p, s, l, t, mod='fmri', electrodes='motor')              
                 # Save results object
-                sio.savemat(res_mat_path, {'Res':[Res]}) # import into Matlab with : data = load(res_path); Res = [data.Res{:}];
+                sio.savemat(res_mat_path, {'Res':Res}) # import into Matlab with : data = load(res_path); Res = [data.Res{:}];

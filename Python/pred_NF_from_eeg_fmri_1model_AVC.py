@@ -243,7 +243,7 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
     ### Removing some eletrodes
     logger.info("* Removing noisy electrodes")
     
-    motor_channels = [4,5,17,20,21,22,23,24,25,26,27,34,35,40,41,42,43,48,49,63] 
+    motor_channels = [4,5,16,17,20,21,22,23,24,25,26,27,32,33,34,35,40,41,42,43,48,49,63] 
     frontal_channels = [32,33,16] # electrodes to keep, base 64 already. Removed for patients.
     all_channels = np.arange(0,64)
     ind_elect = np.arange(0,64) # electrodes to exclude
@@ -297,7 +297,10 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
             
             f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
         
-
+    f_interval_matlab = np.empty( (1,11), dtype=object)
+    for i in range(len(f_interval)) :
+        f_interval_matlab[0,i] = f_interval[i]
+    
     ################ debug ##################
     
     # with open("freq_band_learning.txt", "wb") as fp:   #Pickling
@@ -454,8 +457,9 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
         logger.error("Not implemented")
         return 0
     elif (reg_function == 'fistaL1') :
-        lambdas = np.arange(0,2000+1, 100) # initial values
+        #lambdas = np.arange(0,2000+1, 100) # initial values
         #lambdas = np.arange(0,50000, 500) # test
+        lambdas = np.arange(1)
     else :
         logger.error("reg_function (string): regularisation function, must be 'lasso' (matlab), 'fistaL1' or 'L12'")
         return 0
@@ -525,8 +529,11 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
             ch64 = ch1 + 63
 
         filter_estimated_eeg = filter_estimated[nb_mat_design-1]
-        filter_estimated_fmri = filter_estimated[0:nb_mat_design-1]
-
+        filter_estimated_fmri = np.empty( (1,3), dtype=object)
+        filter_estimated_fmri[0,0] = filter_estimated[0]
+        filter_estimated_fmri[0,1] = filter_estimated[1]
+        filter_estimated_fmri[0,2] = filter_estimated[2]
+        
     elect_kept = np.ones(64)
     elect_kept[ind_elect_eeg_exclud] = 0
     
@@ -565,10 +572,10 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
            'D_test':D_test, \
            'D_learn':D_learning, \
            'index_freq_band_used':index_freq_band_used, \
-           'f_interval':f_interval, \
+           'f_interval':f_interval_matlab, \
            'elect_used':elect_kept, \
-           'bad_scores_testing_ind':bad_scores_testing_ind, \
-           'bad_scores_learning_ind':bad_scores_learning_ind \
+           'bad_scores_testing_ind':bad_scores_testing_ind.astype(float), \
+           'bad_scores_learning_ind':bad_scores_learning_ind.astype(float) \
           }
     
     logger.info("* Done !")
