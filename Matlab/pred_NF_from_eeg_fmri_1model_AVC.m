@@ -8,7 +8,11 @@
 % clean_test: boolean, to clean or not the design matrix of data test.
 
 function Res = pred_NF_from_eeg_fmri_1model_AVC(suj_ID, session, learn_run, test_run,mod, nb_bandfreq, reg_function,clean_test)
-DataPath='/home/claire/DatatAndResults/Data_NFAVC/Patients'; % Where subjects are stored
+DataPath='C:/Users/cpinte/Documents/Data/Patients'; % Where subjects are stored
+ResPath=['C:/Users/cpinte/Documents/Results/Res_', suj_ID ,'_s' ,session, '_l', learn_run, '_t', test_run, '/']; % Where figures are saved
+if not(isfolder(ResPath))
+    mkdir(ResPath)
+end
 if nargin ==0
 error('Some parameters are needed : suj_ID \n session: S1s1, S1s2,.. must contain subfolders nf1, nf2, nf3, mi_pre \n learn_run and test_run: nf1 nf2 or nf3 \n mod: eeg, fmri or both. Here both means 2 models. \n nb_bandfreq: number of freq bands (default 10) \n size_bandfreq: width of freq bands for the design matrice \n reg: regularisation function: lasso (matlab), fistaL1 (default) or L12 \n clean_test: boolean, to clean or not the design matrix of data test. (not used) \n')
 end
@@ -49,7 +53,6 @@ blocsize=160;
 f_m= 7; % minimum freq to consider
 f_M=30; % maximum freq to consider
 f_win=ceil((f_M-f_m)/nb_bandfreq); % windows frequency size
-
 
 disp(['  *  Reshaping EEG signals of learning and testing sessions']);
 clear EEG_signal_reshape_learning EEG_signal_reshape_test
@@ -163,16 +166,36 @@ end
 % Removing some electrods (the noisy ones, like occipital) from the design matrix of both steps:
 disp(['  *  Removing some electrods (the noisy ones, like occipital) from the design matrix of both steps:']);
 
-motor_channels = [5,6,18,21,22,23,24,25,26,27,28,35,36,43,44,49,50,64]; % electrods to keep, base 64 already
+motor_channels = [5,6,17,18,21,22,23,24,25,26,27,28,33,34,35,36,41,42,43,44,49,50,64]; % electrods to keep, base 64 already
 frontal_channels = [33 34 17]; % electrods to keep, base 64 already. Removed for patients.
+all_channels = [1:64];
 ind_elect_eeg_exclud = 1:64; % electrodes to exclude
 ind_elect_eeg_exclud([motor_channels ])=[];
+%ind_elect_eeg_exclud([all_channels ])=[];
+
+% clear Emaps; k=0;
+% for i=[1:31 33:64]
+%     k=k+1;
+%     Emaps{1,k}= Chanlocs(i).labels;
+%     Emaps{3,k}= Chanlocs(i).X;
+%     Emaps{2,k}= -Chanlocs(i).Y;
+% end
+
+% elect_kept=ones(1,64);
+% elect_kept(ind_elect_eeg_exclud)=0;
+% disp(elect_kept)
+% plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['motor_channel']); 
 
 % alternative using variance of electrodes
-var_elect = var(EEG_signal_reshape_learning');
-var_ref = var_elect(5)+0.1*var_elect(5);
-ind_elect_eeg_exclud = 1:64; % electrodes to exclude
-ind_elect_eeg_exclud(var_elect<=var_ref)=[]; % cancel electrodes to kepp
+% var_elect = var(EEG_signal_reshape_learning');
+% var_ref = var_elect(5)+0.1*var_elect(5);
+% ind_elect_eeg_exclud = 1:64; % electrodes to exclude
+% ind_elect_eeg_exclud(var_elect<=var_ref)=[]; % cancel electrodes to kepp
+
+% elect_chosen=ones(1,64);
+% elect_chosen(ind_elect_eeg_exclud)=0;
+% disp(elect_chosen)
+% plotElecPotentials(Emaps,elect_chosen([1:31 33:end])',1), title(['alternative']); 
 
 clear D_*;
 index_freq_band_used = [1:length(freq_band_learning)];
@@ -273,13 +296,16 @@ end
 disp(['  **  Execution...']);
 clear alpha D_test_fmri D_learning_fmri;
 
-if strcmp(learn_run,test_run) % then cut the session in 2 blocks:
-    learning_block=blocsize*1+1:round(length(D_learning_old)/2);
-    testing_block = learning_block(end)+1:length(D_test_old);
-else
-    learning_block=blocsize*1+1:length(D_learning_old);
-    testing_block=1:length(D_test_old);
-end
+% if strcmp(learn_run,test_run) % then cut the session in 2 blocks:
+%     learning_block=blocsize*1+1:round(length(D_learning_old)/2);
+%     testing_block = learning_block(end)+1:length(D_test_old);
+% else
+%     learning_block=blocsize*1+1:length(D_learning_old);
+%     testing_block=1:length(D_test_old);
+% end
+
+learning_block=blocsize*1+1:length(D_learning_old);
+testing_block=1:length(D_test_old);
 
 tic
 testing_dummy_data = 0;
@@ -307,10 +333,22 @@ disp(['  **  Estimating regularisation parameter lambda for method ' reg_functio
 if strcmp(reg_function, 'lasso')
     lambdas=[0.1:0.2:10];
 elseif strcmp(reg_function, 'fistaL1')
-    lambdas=[0:80:2000];
+    %lambdas=[0:100:2000]; %initial values
+    %lambdas=[0:500:50000]; % test
+    lambdas=[0:200:5000];
 end
 
+% Creating object input for testing
+lambda_choice_input.D_learning = D_learning;
+lambda_choice_input.rep_learning = rep_learning;
+lambda_choice_input.nb_bandfreq = nb_bandfreq;
+lambda_choice_input.reg_function = reg_function;
+lambda_choice_input.lambdas = lambdas;
+lambda_choice_input.disp_fig = disp_fig;
+save(['',ResPath,'lambda_choice.mat'],'lambda_choice_input');
+
 [regul_eeg] = lambda_choice(D_learning,rep_learning,nb_bandfreq, reg_function,lambdas,disp_fig);
+saveas(gcf,['',ResPath,'Fig1.png'])
 % end
 
 disp(['  **  EEG lambda parameter for method ' reg_function ' is ' num2str(regul_eeg)]);
@@ -394,9 +432,11 @@ end
 %         title([reg_function ': lambda ' num2str(regul_eeg) '. estimated filter for band freq for EEG ' num2str(f_interval{index_freq_band_used(i)})]);
 %     end
     
-    plotElecPotentials(Emaps,sum(abs(filter_estimated_eeg(1:63,:)),2)',1), title(['estimated abs filter all band of freq for EEG']);
-        plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['estimated filter all band of freq for EEG']);
-
+    plotElecPotentials(Emaps,sum(abs(filter_estimated_eeg(1:63,:)),2)',1), title(['X0 estimated abs filter all band of freq for EEG']);
+    saveas(gcf,['',ResPath,'Fig2.png'])
+    plotElecPotentials(Emaps,sum((filter_estimated_eeg(1:63,:)),2)',1), title(['X0 estimated filter all band of freq for EEG']);
+    saveas(gcf,['',ResPath,'Fig3.png'])
+    
 %     kk=1;
 %     for i = 1:nb_bandfreq
 %         plotElecPotentials(Emaps,filter_estimated_fmri{1}(1:63,i)',1);
@@ -406,11 +446,13 @@ end
 %         kk=kk+1;
 %     end
     
-    plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['estimated abs filter all band of freq for fMRI']);
-      figure();  plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['estimated filter all band of freq for fMRI']);
+    plotElecPotentials(Emaps,sum(abs(cell2mat(filter_estimated_fmri)),2)',1), title(['X3 X4 X5 estimated abs filter all band of freq for fMRI']);
+    saveas(gcf,['',ResPath,'Fig4.png'])
+    plotElecPotentials(Emaps,sum((cell2mat(filter_estimated_fmri)),2)',1), title(['X3 X4 X5 estimated filter all band of freq for fMRI']);
+    saveas(gcf,['',ResPath,'Fig5.png'])
 
-
-plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1, title(['Electrodes kept in the model']));  
+    plotElecPotentials(Emaps,elect_kept([1:31 33:end])',1), title(['Electrodes kept in the model']);  
+    saveas(gcf,['',ResPath,'Fig6.png'])
         
     length(nonzeros(filter_estimated_eeg))
     length(nonzeros(cell2mat(filter_estimated_fmri)))
@@ -421,7 +463,7 @@ Res.learning_session = learn_run;
 Res.test_session = test_run;
 Res.alpha = alpha;
 %Res.alpha_fMRI = alpha_fmri;
-Res.NF_estimated_ave = NF_estimated;
+Res.NF_estimated_fMRI = NF_estimated;
 Res.filter_estimated_e = filter_estimated_eeg;
 Res.filter_estimated_f = filter_estimated_fmri;
 
