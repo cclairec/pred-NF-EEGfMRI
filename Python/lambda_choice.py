@@ -59,77 +59,77 @@ def lambda_choice(Dtrain, rep_train, nb_freq_band, reg_function, lambdas, disp_,
     sparsity_mean = np.zeros(size_ind)
     lambdas_end = lambdas[-1]
     
-    # for l in lambdas :
+    for l in lambdas :
         
-    #     logger.info("... Computing lambda = {}  /{}".format(l,lambdas_end))
-    #     rho = l
-    #     k_ind = 0
+        logger.info("... Computing lambda = {}  /{}".format(l,lambdas_end))
+        rho = l
+        k_ind = 0
 
-    #     for k in np.arange(0, np.shape(Dtrain)[0]-size_cv_dataset, delay_cv) :
-    #         cv_set = np.arange(np.floor(k),np.floor(k)+size_cv_dataset+1,dtype=int)
-    #         train_set = np.arange(0,np.shape(Dtrain)[0])
-    #         train_set = np.delete(train_set, cv_set)
+        for k in np.arange(0, np.shape(Dtrain)[0]-size_cv_dataset, delay_cv) :
+            cv_set = np.arange(np.floor(k),np.floor(k)+size_cv_dataset+1,dtype=int)
+            train_set = np.arange(0,np.shape(Dtrain)[0])
+            train_set = np.delete(train_set, cv_set)
             
-    #         Dtrain_k = Dtrain[train_set,:,:]
-    #         rep_train_k = rep_train[train_set]
-    #         Dcv_k = Dtrain[cv_set,:,:]
-    #         rep_cv_k = rep_train[cv_set]
+            Dtrain_k = Dtrain[train_set,:,:]
+            rep_train_k = rep_train[train_set]
+            Dcv_k = Dtrain[cv_set,:,:]
+            rep_cv_k = rep_train[cv_set]
             
-    #         SStot = np.sum( (rep_cv_k - np.mean(rep_cv_k))**2 )
-    #         SStot_train = np.sum( (rep_train_k - np.mean(rep_train_k))**2 )
+            SStot = np.sum( (rep_cv_k - np.mean(rep_cv_k))**2 )
+            SStot_train = np.sum( (rep_train_k - np.mean(rep_train_k))**2 )
             
-    #         if (reg_function == 'lasso') :
-    #             logger.error("Not implemented.")
-    #         elif (reg_function == 'fistaL1') :
-    #             method_ = 1
-    #             alpha = forward_backward_optimisation(Dtrain_k, rep_train_k, l, method_, rho)
-    #             sparsity_[ind,k_ind] = len(alpha[alpha!=0])
+            if (reg_function == 'lasso') :
+                logger.error("Not implemented.")
+            elif (reg_function == 'fistaL1') :
+                method_ = 1
+                alpha = forward_backward_optimisation(Dtrain_k, rep_train_k, l, method_, rho)
+                sparsity_[ind,k_ind] = len(alpha[alpha!=0])
                 
-    #             if (len(np.shape(Dcv_k)) == 3) :
-    #                 predicted_values = np.zeros(np.shape(Dcv_k)[0])
-    #                 for t in range(0,np.shape(Dcv_k)[0]) :
-    #                     predicted_values[t] = np.trace( np.matmul(np.squeeze(Dcv_k[t,:,:]).T,alpha) )
-    #             else :
-    #                 predicted_values = np.matmul(Dcv_k,alpha)
+                if (len(np.shape(Dcv_k)) == 3) :
+                    predicted_values = np.zeros(np.shape(Dcv_k)[0])
+                    for t in range(0,np.shape(Dcv_k)[0]) :
+                        predicted_values[t] = np.trace( np.matmul(np.squeeze(Dcv_k[t,:,:]).T,alpha) )
+                else :
+                    predicted_values = np.matmul(Dcv_k,alpha)
                     
-    #             SSres = sum( (rep_cv_k - predicted_values)**2 )
-    #             CV[ind,k_ind] = SSres/SStot
+                SSres = sum( (rep_cv_k - predicted_values)**2 )
+                CV[ind,k_ind] = SSres/SStot
                 
-    #             if (len(np.shape(Dtrain_k)) == 3) :
-    #                 predicted_values = np.zeros(np.shape(Dtrain_k)[0])
-    #                 for t in range(0,np.shape(Dtrain_k)[0]) :
-    #                     predicted_values[t] = np.trace( np.matmul(np.squeeze(Dtrain_k[t,:,:]).T,alpha) )
-    #             else :
-    #                 predicted_values = np.matmul(Dtrain_k,alpha)
+                if (len(np.shape(Dtrain_k)) == 3) :
+                    predicted_values = np.zeros(np.shape(Dtrain_k)[0])
+                    for t in range(0,np.shape(Dtrain_k)[0]) :
+                        predicted_values[t] = np.trace( np.matmul(np.squeeze(Dtrain_k[t,:,:]).T,alpha) )
+                else :
+                    predicted_values = np.matmul(Dtrain_k,alpha)
 
-    #             SSres_train = sum( (rep_train_k - predicted_values)**2 )
-    #             Cost_train[ind,k_ind] = SSres_train/SStot_train
+                SSres_train = sum( (rep_train_k - predicted_values)**2 )
+                Cost_train[ind,k_ind] = SSres_train/SStot_train
                 
-    #         k_ind = k_ind + 1
+            k_ind = k_ind + 1
         
-    #     CV_mean_[ind] = np.mean(CV[ind,:])
-    #     Cost_train_mean[ind] = np.mean(Cost_train[ind,:])
-    #     sparsity_mean[ind] = np.mean(sparsity_[ind,:])
+        CV_mean_[ind] = np.mean(CV[ind,:])
+        Cost_train_mean[ind] = np.mean(Cost_train[ind,:])
+        sparsity_mean[ind] = np.mean(sparsity_[ind,:])
         
-    #     if (sparsity_mean[ind] <= 2) :
-    #         logger.info("Breaking at lambda = {}".format(l))
-    #         ind = ind + 1
-    #         break
+        if (sparsity_mean[ind] <= 2) :
+            logger.info("Breaking at lambda = {}".format(l))
+            ind = ind + 1
+            break
 
-    #     ind = ind + 1
+        ind = ind + 1
     
-    ########### debug ###########"
+    ########### debug ###########
     # with open("CV_mean_.txt", "wb") as fp:   #Pickling
     #     pickle.dump(CV_mean_, fp)
     
     # with open("Cost_train_mean.txt", "wb") as fp:   #Pickling
     #     pickle.dump(Cost_train_mean, fp)
         
-    with open("CV_mean_.txt", "rb") as fp:   # Unpickling
-        CV_mean_ = pickle.load(fp)
+    # with open("CV_mean_.txt", "rb") as fp:   # Unpickling
+    #     CV_mean_ = pickle.load(fp)
         
-    with open("Cost_train_mean.txt", "rb") as fp:   # Unpickling
-        Cost_train_mean = pickle.load(fp)
+    # with open("Cost_train_mean.txt", "rb") as fp:   # Unpickling
+    #     Cost_train_mean = pickle.load(fp)
         
     biais_var = (CV_mean_ + Cost_train_mean) / 2
 

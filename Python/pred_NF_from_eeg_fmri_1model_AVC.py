@@ -270,37 +270,35 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
         f_interval.append([0,0])
     f_interval.append([0,0]) # one more
     
-    # Compute freq_band for learning and testing
+    # Compute freq_band for learning and testing 
+    k=0
+    steps = 400
     
-    ################ debug ##################
-    
-    # k=0
-    # steps = 400
-    
-    # for i in range(0,64000,50) :
-    #     k = k+1
-    #     if (k%100 == 0) :
-    #         logger.info("Computing ... {}/1280 rows".format(k))
-    #     elif (k==1280) :
-    #         logger.info("Done : {}/1280 rows".format(k))
-    #     f_interval[0] = [f_m,f_m+f_win]
+    for i in range(0,64000,50) :
+        k = k+1
+        if (k%100 == 0) :
+            logger.info("Computing ... {}/1280 rows".format(k))
+        elif (k==1280) :
+            logger.info("Done : {}/1280 rows".format(k))
+        f_interval[0] = [f_m,f_m+f_win]
         
-    #     for ff in range(0,nb_bandfreq) :
-    #         eeg_signal_learn = EEG_signal_reshape_learning[:,i:min((np.shape(EEG_signal_reshape_learning)[1]),i+steps+1)].T
+        for ff in range(0,nb_bandfreq) :
+            eeg_signal_learn = EEG_signal_reshape_learning[:,i:min((np.shape(EEG_signal_reshape_learning)[1]),i+steps+1)].T
             
-    #         for col_index in range(0,np.shape(eeg_signal_learn)[1]) :
-    #             col = eeg_signal_learn[:,col_index]
-    #             freq_band_learning[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+            for col_index in range(0,np.shape(eeg_signal_learn)[1]) :
+                col = eeg_signal_learn[:,col_index]
+                freq_band_learning[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
             
-    #         eeg_signal_test = EEG_signal_reshape_test[:,i:min((np.shape(EEG_signal_reshape_test)[1]),i+steps+1)].T
+            eeg_signal_test = EEG_signal_reshape_test[:,i:min((np.shape(EEG_signal_reshape_test)[1]),i+steps+1)].T
             
-    #         for col_index in range(0,np.shape(eeg_signal_test)[1]) :
-    #             col = eeg_signal_test[:,col_index]
-    #             freq_band_test[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+            for col_index in range(0,np.shape(eeg_signal_test)[1]) :
+                col = eeg_signal_test[:,col_index]
+                freq_band_test[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
             
-    #         f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
+            f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
         
 
+    ################ debug ##################
     
     # with open("freq_band_learning.txt", "wb") as fp:   #Pickling
     #     pickle.dump(freq_band_learning, fp)
@@ -308,11 +306,11 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
     # with open("freq_band_test.txt", "wb") as fp:   #Pickling
     #     pickle.dump(freq_band_test, fp)
     
-    with open("freq_band_learning.txt", "rb") as fp:   # Unpickling
-        freq_band_learning = pickle.load(fp)
+    # with open("freq_band_learning.txt", "rb") as fp:   # Unpickling
+    #     freq_band_learning = pickle.load(fp)
 
-    with open("freq_band_test.txt", "rb") as fp:   # Unpickling
-        freq_band_test = pickle.load(fp)
+    # with open("freq_band_test.txt", "rb") as fp:   # Unpickling
+    #     freq_band_test = pickle.load(fp)
     
     ###################################""
     
