@@ -48,7 +48,7 @@ methods = {'fb', 'fista', 'nesterov'};
 
 
 % operator callbacks
-F = @(x)lambda*norm(x,1);
+F = @(x)lambda*norm_L21(x)+rho*norm(x,1);
 G = @(x)1/2*norm(y-A*x)^2;
 if length(size(A)) == 3
     G = @(x) G3(A, x, y);
