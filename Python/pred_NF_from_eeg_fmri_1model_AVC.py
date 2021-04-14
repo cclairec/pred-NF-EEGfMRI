@@ -243,7 +243,7 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
     ### Removing some eletrodes
     logger.info("* Removing noisy electrodes")
     
-    motor_channels = [4,5,17,20,21,22,23,24,25,26,27,34,35,40,41,42,43,48,49,63] 
+    motor_channels = [4,5,16,17,20,21,22,23,24,25,26,27,32,33,34,35,40,41,42,43,48,49,63] 
     frontal_channels = [32,33,16] # electrodes to keep, base 64 already. Removed for patients.
     all_channels = np.arange(0,64)
     ind_elect = np.arange(0,64) # electrodes to exclude
@@ -270,37 +270,38 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
         f_interval.append([0,0])
     f_interval.append([0,0]) # one more
     
-    # Compute freq_band for learning and testing
+    # Compute freq_band for learning and testing 
+    k=0
+    steps = 400
+    
+    for i in range(0,64000,50) :
+        k = k+1
+        if (k%100 == 0) :
+            logger.info("Computing ... {}/1280 rows".format(k))
+        elif (k==1280) :
+            logger.info("Done : {}/1280 rows".format(k))
+        f_interval[0] = [f_m,f_m+f_win]
+        
+        for ff in range(0,nb_bandfreq) :
+            eeg_signal_learn = EEG_signal_reshape_learning[:,i:min((np.shape(EEG_signal_reshape_learning)[1]),i+steps+1)].T
+            
+            for col_index in range(0,np.shape(eeg_signal_learn)[1]) :
+                col = eeg_signal_learn[:,col_index]
+                freq_band_learning[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+            
+            eeg_signal_test = EEG_signal_reshape_test[:,i:min((np.shape(EEG_signal_reshape_test)[1]),i+steps+1)].T
+            
+            for col_index in range(0,np.shape(eeg_signal_test)[1]) :
+                col = eeg_signal_test[:,col_index]
+                freq_band_test[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
+            
+            f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
+        
+    f_interval_matlab = np.empty( (1,11), dtype=object)
+    for i in range(len(f_interval)) :
+        f_interval_matlab[0,i] = f_interval[i]
     
     ################ debug ##################
-    
-    # k=0
-    # steps = 400
-    
-    # for i in range(0,64000,50) :
-    #     k = k+1
-    #     if (k%100 == 0) :
-    #         logger.info("Computing ... {}/1280 rows".format(k))
-    #     elif (k==1280) :
-    #         logger.info("Done : {}/1280 rows".format(k))
-    #     f_interval[0] = [f_m,f_m+f_win]
-        
-    #     for ff in range(0,nb_bandfreq) :
-    #         eeg_signal_learn = EEG_signal_reshape_learning[:,i:min((np.shape(EEG_signal_reshape_learning)[1]),i+steps+1)].T
-            
-    #         for col_index in range(0,np.shape(eeg_signal_learn)[1]) :
-    #             col = eeg_signal_learn[:,col_index]
-    #             freq_band_learning[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
-            
-    #         eeg_signal_test = EEG_signal_reshape_test[:,i:min((np.shape(EEG_signal_reshape_test)[1]),i+steps+1)].T
-            
-    #         for col_index in range(0,np.shape(eeg_signal_test)[1]) :
-    #             col = eeg_signal_test[:,col_index]
-    #             freq_band_test[ff][k,col_index] = bandpower(col, 200, f_interval[ff][0], f_interval[ff][1])
-            
-    #         f_interval[ff+1] = [(max(f_interval[ff])-1),(max(f_interval[ff])-1)+f_win]  
-        
-
     
     # with open("freq_band_learning.txt", "wb") as fp:   #Pickling
     #     pickle.dump(freq_band_learning, fp)
@@ -308,11 +309,11 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
     # with open("freq_band_test.txt", "wb") as fp:   #Pickling
     #     pickle.dump(freq_band_test, fp)
     
-    with open("freq_band_learning.txt", "rb") as fp:   # Unpickling
-        freq_band_learning = pickle.load(fp)
+    # with open("freq_band_learning.txt", "rb") as fp:   # Unpickling
+    #     freq_band_learning = pickle.load(fp)
 
-    with open("freq_band_test.txt", "rb") as fp:   # Unpickling
-        freq_band_test = pickle.load(fp)
+    # with open("freq_band_test.txt", "rb") as fp:   # Unpickling
+    #     freq_band_test = pickle.load(fp)
     
     ###################################""
     
@@ -456,8 +457,9 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
         logger.error("Not implemented")
         return 0
     elif (reg_function == 'fistaL1') :
-        lambdas = np.arange(0,2000+1, 100) # initial values
+        #lambdas = np.arange(0,2000+1, 100) # initial values
         #lambdas = np.arange(0,50000, 500) # test
+        lambdas = np.arange(1)
     else :
         logger.error("reg_function (string): regularisation function, must be 'lasso' (matlab), 'fistaL1' or 'L12'")
         return 0
@@ -527,8 +529,11 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
             ch64 = ch1 + 63
 
         filter_estimated_eeg = filter_estimated[nb_mat_design-1]
-        filter_estimated_fmri = filter_estimated[0:nb_mat_design-1]
-
+        filter_estimated_fmri = np.empty( (1,3), dtype=object)
+        filter_estimated_fmri[0,0] = filter_estimated[0]
+        filter_estimated_fmri[0,1] = filter_estimated[1]
+        filter_estimated_fmri[0,2] = filter_estimated[2]
+        
     elect_kept = np.ones(64)
     elect_kept[ind_elect_eeg_exclud] = 0
     
@@ -567,10 +572,10 @@ def pred_NF_from_eeg_fmri_1model_AVC(dataPath, resPath, suj_ID, session, learn_r
            'D_test':D_test, \
            'D_learn':D_learning, \
            'index_freq_band_used':index_freq_band_used, \
-           'f_interval':f_interval, \
+           'f_interval':f_interval_matlab, \
            'elect_used':elect_kept, \
-           'bad_scores_testing_ind':bad_scores_testing_ind, \
-           'bad_scores_learning_ind':bad_scores_learning_ind \
+           'bad_scores_testing_ind':bad_scores_testing_ind.astype(float), \
+           'bad_scores_learning_ind':bad_scores_learning_ind.astype(float) \
           }
     
     logger.info("* Done !")
