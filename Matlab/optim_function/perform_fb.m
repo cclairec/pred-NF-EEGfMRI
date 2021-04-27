@@ -57,7 +57,8 @@ for i=1:niter
             y = xnew + (t-1)/(tnew)*(xnew-x);
             x = xnew; t = tnew;
             % stopping criteria
-            if i>2 & (R(i-1)-R(i))/R(i) < eps 
+            if i>100 & 0<(R(i-1)-R(i))/R(i) & (R(i-1)-R(i))/R(i) < eps 
+                disp(i)
                 break;
             end
         case 'nesterov'
