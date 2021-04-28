@@ -68,7 +68,7 @@ end
 options.report = @(x)F(x)+G(x);
 
 % Bench the algorithm
-options.niter = 6000;
+options.niter = 10000;
 
 options.method = methods{method_i};
 clear x predicted_values;

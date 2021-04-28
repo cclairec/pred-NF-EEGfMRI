@@ -170,8 +170,8 @@ motor_channels = [5,6,17,18,21,22,23,24,25,26,27,28,33,34,35,36,41,42,43,44,49,5
 frontal_channels = [33 34 17]; % electrods to keep, base 64 already. Removed for patients.
 all_channels = [1:64];
 ind_elect_eeg_exclud = 1:64; % electrodes to exclude
-ind_elect_eeg_exclud([motor_channels ])=[];
-%ind_elect_eeg_exclud([all_channels ])=[];
+%ind_elect_eeg_exclud([motor_channels ])=[];
+ind_elect_eeg_exclud([all_channels ])=[];
 
 % clear Emaps; k=0;
 % for i=[1:31 33:64]
@@ -335,7 +335,7 @@ if strcmp(reg_function, 'lasso')
 elseif strcmp(reg_function, 'fistaL1')
     %lambdas=[0:100:2000]; %initial values
     %lambdas=[0:500:50000]; % test
-    lambdas=[0:200:5000];
+    lambdas=[0:100:2000];
 end
 
 % Creating object input for testing

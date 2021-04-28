@@ -5,7 +5,7 @@
 
 patients={'P002'};
 sessions={'S1s1'};
-learn_runs={'NF2'};
+learn_runs={'NF3'};
 test_runs={'NF2'};
 for p=1:length(patients)
     for s=1:length(sessions)

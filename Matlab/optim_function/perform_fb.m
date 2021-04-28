@@ -36,7 +36,7 @@ report = getoptions(options, 'report', @(x)0);
 niter = getoptions(options, 'niter', 100);
 verb = getoptions(options, 'verb', 0);
 fbdamping = getoptions(options, 'fbdamping', 1.8);
-eps = getoptions(options, 'eps', 0.0003); % or 0.0004 if too slow
+eps = getoptions(options, 'eps', 0.0000001); % or 0.0004 if too slow
 
 clear R Diff xnew tnew;
 t = 1;  % fista & nesterov
@@ -57,7 +57,7 @@ for i=1:niter
             y = xnew + (t-1)/(tnew)*(xnew-x);
             x = xnew; t = tnew;
             % stopping criteria
-            if i>100 & 0<(R(i-1)-R(i))/R(i) & (R(i-1)-R(i))/R(i) < eps 
+            if i>300 & 0<(R(i-1)-R(i))/R(i) & (R(i-1)-R(i))/R(i) < eps 
                 disp(i)
                 break;
             end

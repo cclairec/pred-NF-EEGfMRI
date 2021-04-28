@@ -106,11 +106,11 @@ for l=lambdas
     Cost_train_mean(ind) = mean(Cost_train(ind,:));
     sparsity_mean(ind) = mean(sparsity_(ind,:));
     
-    if sparsity_mean(ind) <=2
-        disp(['breaking at ' num2str(l)]);
-        ind = ind + 1;
-        break;
-    end
+%     if sparsity_mean(ind) <=2
+%         disp(['breaking at ' num2str(l)]);
+%         ind = ind + 1;
+%         break;
+%     end
     ind = ind + 1;
 end
 
