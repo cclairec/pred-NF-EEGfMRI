@@ -33,6 +33,9 @@ function [x,R] = perform_fb(x, ProxF, GradG, L, options)
 options.null = 0;
 method = getoptions(options, 'method', 'fb');
 report = getoptions(options, 'report', @(x)0);
+reportF = getoptions(options, 'reportF', @(x)0);
+reportG = getoptions(options, 'reportG', @(x)0);
+reportH = getoptions(options, 'reportH', @(x)0);
 niter = getoptions(options, 'niter', 100);
 verb = getoptions(options, 'verb', 0);
 fbdamping = getoptions(options, 'fbdamping', 1.8);
@@ -44,7 +47,26 @@ tt = 2/L; gg = 0; A = 0; % nesterov
 y = x;
 x0 = x;
 for i=1:niter
+    
+    F(i) = reportF(x);
+    G(i) = reportG(x);
+    H(i) = reportH(x);
+%     fileF = fopen('F.txt', 'a');
+%     fileG = fopen('G.txt', 'a');
+%     fileH = fopen('H.txt', 'a');
+%     fprintf(fileF, '\n%f', F);
+%     fprintf(fileG, '\n%f', G);
+%     fprintf(fileH, '\n%f', H);
+%     fclose(fileF);
+%     fclose(fileG);
+%     fclose(fileH);
+    
   	R(i) = report(x);
+    
+%     fileR = fopen('R.txt', 'a');
+%     fprintf(fileR, '\n%f', R(i));
+%     fclose(fileR);
+
     if verb
         progressbar(i,niter);
     end
@@ -57,7 +79,7 @@ for i=1:niter
             y = xnew + (t-1)/(tnew)*(xnew-x);
             x = xnew; t = tnew;
             % stopping criteria
-            if i>300 & 0<(R(i-1)-R(i))/R(i) & (R(i-1)-R(i))/R(i) < eps 
+            if i>300 & -eps < (R(i-1)-R(i))/R(i) & (R(i-1)-R(i))/R(i) < eps 
                 disp(i)
                 break;
             end
@@ -73,3 +95,13 @@ for i=1:niter
             
     end 
 end
+
+% figure;
+% plot1 = plot(F); 
+% hold on
+% plot2 = plot(G); 
+% hold on
+% plot3 = plot(H); 
+% hold on
+% plot4 = plot(R); 
+% legend('F : regul','G : att. données','H : regul sans l','R : F+G')

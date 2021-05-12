@@ -50,6 +50,7 @@ methods = {'fb', 'fista', 'nesterov'};
 % operator callbacks
 F = @(x)lambda*norm_L21(x)+rho*norm(x,1);
 G = @(x)1/2*norm(y-A*x)^2;
+H = @(x)norm_L21(x)+norm(x,1);
 if length(size(A)) == 3
     G = @(x) G3(A, x, y);
 end
@@ -66,6 +67,9 @@ end
 
 % Function to record the energy.
 options.report = @(x)F(x)+G(x);
+options.reportF = @(x)F(x);
+options.reportG = @(x)G(x);
+options.reportH = @(x)H(x);
 
 % Bench the algorithm
 options.niter = 10000;
